@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Eye, EyeOff } from 'lucide-react';
 import { authService } from '@/services/auth';
 
 interface LoginModalProps {
@@ -22,6 +22,7 @@ interface LoginModalProps {
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -46,20 +47,30 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     }
   };
 
+  const handleForgotPassword = () => {
+    // TODO: Implement forgot password
+    console.log('Forgot password clicked');
+  };
+
+  const handleSignUp = () => {
+    // TODO: Implement sign up
+    console.log('Sign up clicked');
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="text-2xl">Login to AI UI</DialogTitle>
-          <DialogDescription>
+        <DialogHeader className="space-y-3">
+          <DialogTitle className="text-2xl text-center">Login</DialogTitle>
+          <DialogDescription className="text-center">
             Enter your credentials to access AI features
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 mt-4">
+        <form onSubmit={handleSubmit} className="space-y-6 mt-6">
           {/* Username */}
-          <div className="space-y-2">
-            <label htmlFor="username" className="text-sm font-medium">
+          <div className="space-y-1">
+            <label htmlFor="username" className="text-sm font-medium mb-1">
               Username
             </label>
             <Input
@@ -70,28 +81,55 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               onChange={(e) => setUsername(e.target.value)}
               required
               disabled={loading}
+              className="h-11 mt-1"
             />
           </div>
 
           {/* Password */}
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label htmlFor="password" className="text-sm font-medium">
               Password
             </label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={loading}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                disabled={loading}
+                className="h-11 mt-1 pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            
+            {/* Forgot Password Link */}
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                className="text-sm text-primary hover:underline"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
 
           {/* Error Message */}
           {error && (
-            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg">
+            <div className="text-sm text-destructive bg-destructive/10 p-3 rounded-lg border border-destructive/20">
               {error}
             </div>
           )}
@@ -99,7 +137,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           {/* Submit Button */}
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full h-11" 
             disabled={loading}
           >
             {loading ? (
@@ -111,6 +149,18 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               'Login'
             )}
           </Button>
+
+          {/* Sign Up Link */}
+          <div className="text-center text-sm text-muted-foreground pt-2">
+            Don't have an account?{' '}
+            <button
+              type="button"
+              onClick={handleSignUp}
+              className="text-primary hover:underline font-medium"
+            >
+              Sign Up
+            </button>
+          </div>
         </form>
       </DialogContent>
     </Dialog>

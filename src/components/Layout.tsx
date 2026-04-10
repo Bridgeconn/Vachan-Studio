@@ -3,19 +3,41 @@
 import { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { Header } from './Header';
+import { LoginModal } from './LoginModal';
+import { sseManager } from '@/services/sseManager';
 
 export function Layout() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+  const [pendingFeature, setPendingFeature] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const handleLogin = () => {
-    // TODO: Show login modal
-    console.log('Login clicked');
+  const handleLoginSuccess = (token: string) => {
     setIsLoggedIn(true);
+    
+    // Connect SSE for real-time notifications
+    sseManager.connect(token);
+    
+    // If user was trying to access a feature, navigate to it
+    if (pendingFeature) {
+      navigate(`/${pendingFeature}`);
+      setPendingFeature(null);
+    }
+  };
+
+  const handleLogin = () => {
+    setIsLoginModalOpen(true);
   };
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    
+    // Disconnect SSE
+    sseManager.disconnect();
+    
+    // Navigate to home
+    navigate('/');
+    
     console.log('Logged out');
   };
 
@@ -25,16 +47,17 @@ export function Layout() {
   };
 
   const handleLogoClick = () => {
-    navigate('/');  // Navigate to home using React Router!
+    navigate('/');
   };
 
   const handleFeatureClick = (featureId: string) => {
     console.log('Feature clicked:', featureId);
     
     if (!isLoggedIn) {
-      // TODO: Show login modal
-      console.log('Need to login first');
-      handleLogin();
+      // Save which feature they wanted
+      setPendingFeature(featureId);
+      // Show login modal
+      setIsLoginModalOpen(true);
     } else {
       // Navigate to feature page
       navigate(`/${featureId}`);
@@ -51,8 +74,13 @@ export function Layout() {
         onLogoClick={handleLogoClick}
       />
       
-      {/* This renders the current page (HomePage, STTPage, etc) */}
       <Outlet context={{ onFeatureClick: handleFeatureClick }} />
+      
+      <LoginModal
+        isOpen={isLoginModalOpen}
+        onClose={() => setIsLoginModalOpen(false)}
+        onSuccess={handleLoginSuccess}
+      />
     </>
   );
 }
