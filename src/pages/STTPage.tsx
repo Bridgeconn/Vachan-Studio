@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { FeatureLayout } from '@/components/FeatureLayout';
 import { SplitView } from '@/components/SplitView';
 import { AudioInput } from '@/components/AudioInput';
+import { STTSettings } from '@/components/STTSettings';
 import { Button } from '@/components/ui/button';
 
 export function STTPage() {
@@ -11,6 +12,13 @@ export function STTPage() {
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [viewMode, setViewMode] = useState<'horizontal' | 'vertical'>('horizontal');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // Settings state
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [device, setDevice] = useState('cpu');
+  const [generateTimestamp, setGenerateTimestamp] = useState(true);
+  const [timestampFormat, setTimestampFormat] = useState('srt');
 
   const handleFileSelect = (file: File) => {
     setSelectedFile(file);
@@ -23,53 +31,45 @@ export function STTPage() {
       return;
     }
 
+    if (!selectedLanguage) {
+      alert('Please select audio language');
+      return;
+    }
+
+    // Prepare API payload
+    const payload = {
+      file: selectedFile,
+      model_name: selectedModel,
+      transcription_language: selectedLanguage,
+      device: device,
+      generate_timestamp: generateTimestamp,
+      timestamp_file_format: generateTimestamp ? timestampFormat : undefined
+    };
+
+    console.log('Submitting with payload:', payload);
+
     // TODO: Call API to submit job
-    console.log('Submitting file:', selectedFile.name);
+    // For now, just show output
     setShowOutput(true);
     setHasSubmitted(true);
   };
 
+  const canSubmit = selectedFile && selectedLanguage;
+
   // Settings content for right panel
   const settingsContent = (
-    <div className="space-y-4">
-      {/* Tabs - Input/Output */}
-      <div className="flex border-b">
-        <button className="px-4 py-2 border-b-2 border-primary font-medium text-sm">
-          Input
-        </button>
-        <button className="px-4 py-2 text-muted-foreground text-sm hover:text-foreground">
-          Output
-        </button>
-      </div>
-      
-      {/* Input Settings */}
-      <div className="space-y-3">
-        <div>
-          <label className="text-sm font-medium mb-1 block">Model</label>
-          <select className="w-full p-2 border rounded-lg text-sm">
-            <option>mms-1b-all</option>
-            <option>whisper-large</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium mb-1 block">Language</label>
-          <select className="w-full p-2 border rounded-lg text-sm">
-            <option>English (eng)</option>
-            <option>Hindi (hin)</option>
-            <option>Spanish (spa)</option>
-          </select>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium mb-1 block">Device</label>
-          <select className="w-full p-2 border rounded-lg text-sm">
-            <option>CPU</option>
-            <option>GPU</option>
-          </select>
-        </div>
-      </div>
-    </div>
+    <STTSettings
+      selectedLanguage={selectedLanguage}
+      selectedModel={selectedModel}
+      device={device}
+      generateTimestamp={generateTimestamp}
+      timestampFormat={timestampFormat}
+      onLanguageChange={setSelectedLanguage}
+      onModelChange={setSelectedModel}
+      onDeviceChange={setDevice}
+      onTimestampChange={setGenerateTimestamp}
+      onTimestampFormatChange={setTimestampFormat}
+    />
   );
 
   // Input section content
@@ -83,9 +83,10 @@ export function STTPage() {
             <Button 
               size="lg"
               onClick={handleSubmit}
-              className="min-w-50"
+              disabled={!canSubmit}
+              className="min-w-[200px]"
             >
-              Transcribe Audio
+              {!selectedLanguage ? 'Select Language First' : 'Transcribe Audio'}
             </Button>
           </div>
         )}
@@ -104,7 +105,10 @@ export function STTPage() {
             after the STT job completes.
           </p>
           <p className="text-sm text-muted-foreground">
-            You can drag the divider to resize this section.
+            Selected Language: {selectedLanguage}
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Model: {selectedModel}
           </p>
         </div>
         

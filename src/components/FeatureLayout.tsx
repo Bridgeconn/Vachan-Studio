@@ -19,8 +19,8 @@ interface FeatureLayoutProps {
   children: ReactNode;
   settingsContent: ReactNode;
   showNewButton?: boolean; // Control visibility
-  viewMode?: 'horizontal' | 'vertical';           // ← Add this
-  onViewModeChange?: (mode: 'horizontal' | 'vertical') => void;  // ← Add this
+  viewMode?: "horizontal" | "vertical"; // ← Add this
+  onViewModeChange?: (mode: "horizontal" | "vertical") => void; // ← Add this
 }
 
 export function FeatureLayout({
@@ -29,16 +29,16 @@ export function FeatureLayout({
   children,
   settingsContent,
   showNewButton = true, // For now, true to see layout
-  viewMode = 'horizontal',      // ← Add this
-  onViewModeChange              // ← Add this
+  viewMode = "horizontal", // ← Add this
+  onViewModeChange, // ← Add this
 }: FeatureLayoutProps) {
   const navigate = useNavigate();
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  
+
   const toggleViewMode = () => {
-    const newMode = viewMode === 'horizontal' ? 'vertical' : 'horizontal';
-    onViewModeChange?.(newMode);  // ← Update this
+    const newMode = viewMode === "horizontal" ? "vertical" : "horizontal";
+    onViewModeChange?.(newMode); // ← Update this
   };
 
   return (
@@ -139,8 +139,8 @@ export function FeatureLayout({
 
       {/* Middle Panel - Input/Output */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* View controls - top right (no bottom border) */}
-        <div className="h-12 flex items-center justify-end px-4 gap-2 flex-shrink-0">
+        {/* View controls - top right */}
+        <div className="h-12 flex items-center justify-end px-4 gap-2 shrink-0">
           <Button
             variant="ghost"
             size="icon"
@@ -157,14 +157,18 @@ export function FeatureLayout({
               <SquareCenterlineDashedHorizontal className="h-5 w-5" />
             )}
           </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setRightPanelOpen(!rightPanelOpen)}
-            title="Toggle settings"
-          >
-            ⚙️
-          </Button>
+
+          {/* Only show settings icon when panel is closed */}
+          {!rightPanelOpen && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setRightPanelOpen(true)}
+              title="Show settings"
+            >
+              ⚙️
+            </Button>
+          )}
         </div>
 
         {/* Content Area - passed as children */}
@@ -173,7 +177,7 @@ export function FeatureLayout({
 
       {/* Right Panel - Settings */}
       <div
-        className={`border-l bg-background transition-all duration-300 flex-shrink-0 ${
+        className={`border-l bg-background transition-all duration-300 shrink-0 ${
           rightPanelOpen ? "w-80" : "w-0"
         } overflow-hidden`}
       >
@@ -185,6 +189,7 @@ export function FeatureLayout({
                 variant="ghost"
                 size="icon"
                 onClick={() => setRightPanelOpen(false)}
+                title="Hide settings"
               >
                 <ChevronRight className="h-5 w-5" />
               </Button>
