@@ -19,6 +19,8 @@ interface FeatureLayoutProps {
   children: ReactNode;
   settingsContent: ReactNode;
   showNewButton?: boolean; // Control visibility
+  viewMode?: 'horizontal' | 'vertical';           // ← Add this
+  onViewModeChange?: (mode: 'horizontal' | 'vertical') => void;  // ← Add this
 }
 
 export function FeatureLayout({
@@ -27,16 +29,16 @@ export function FeatureLayout({
   children,
   settingsContent,
   showNewButton = true, // For now, true to see layout
+  viewMode = 'horizontal',      // ← Add this
+  onViewModeChange              // ← Add this
 }: FeatureLayoutProps) {
   const navigate = useNavigate();
   const [leftPanelOpen, setLeftPanelOpen] = useState(true);
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
-  const [viewMode, setViewMode] = useState<"horizontal" | "vertical">(
-    "horizontal",
-  );
-
+  
   const toggleViewMode = () => {
-    setViewMode(viewMode === "horizontal" ? "vertical" : "horizontal");
+    const newMode = viewMode === 'horizontal' ? 'vertical' : 'horizontal';
+    onViewModeChange?.(newMode);  // ← Update this
   };
 
   return (
