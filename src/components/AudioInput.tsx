@@ -12,10 +12,13 @@ const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg', 'audio/ogg', 'audio/mp3']
 
 interface AudioInputProps {
   onFileSelect: (file: File) => void;
+  selectedFile?: File | null;
+  disabled?: boolean;
+  onRemove?: () => void;
 }
 
-export function AudioInput({ onFileSelect }: AudioInputProps) {
-  const [audioFile, setAudioFile] = useState<File | null>(null);
+export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRemove }: AudioInputProps) {
+  const audioFile = selectedFile;
   const [isRecorded, setIsRecorded] = useState(false); // Track if file is from recording
   const [isRecording, setIsRecording] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -106,14 +109,12 @@ export function AudioInput({ onFileSelect }: AudioInputProps) {
     const validationError = validateFile(file);
     if (validationError) {
       setError(validationError);
-      setAudioFile(null);
       setIsRecorded(false);
       setTimeout(() => setError(''), 5000);
       return;
     }
 
     setError('');
-    setAudioFile(file);
     setIsRecorded(recorded);
     setIsEditingName(false); // Reset editing state
     setEditedName(''); // Clear edited name
@@ -142,7 +143,6 @@ export function AudioInput({ onFileSelect }: AudioInputProps) {
       wavesurfer.current.destroy();
       wavesurfer.current = null;
     }
-    setAudioFile(null);
     setIsRecorded(false);
     setIsPlaying(false);
     setError('');
@@ -151,6 +151,7 @@ export function AudioInput({ onFileSelect }: AudioInputProps) {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+    onRemove?.();
   };
 
   const togglePlayPause = () => {
@@ -179,7 +180,6 @@ export function AudioInput({ onFileSelect }: AudioInputProps) {
       const newName = `${editedName.trim()}.${extension}`;
       
       const newFile = new File([audioFile], newName, { type: audioFile.type });
-      setAudioFile(newFile);
       onFileSelect(newFile);
     }
     setIsEditingName(false);
@@ -225,7 +225,7 @@ export function AudioInput({ onFileSelect }: AudioInputProps) {
     }
   };
 
-  if (!audioFile) {
+  if (!audioFile && !disabled) {
     return (
       <div className="w-full max-w-2xl mx-auto space-y-4">
         <div

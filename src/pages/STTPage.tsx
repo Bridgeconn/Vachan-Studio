@@ -43,6 +43,13 @@ export function STTPage() {
     console.log('File selected:', file.name, file.size);
   };
 
+  const handleRemoveFile = () => {
+    setSelectedFile(null);
+    setShowOutput(false);
+    setCurrentJobId(null);
+    setTranscriptionResult('');
+  };
+
   const handleSubmit = async () => {
     if (!selectedFile) {
       alert('Please upload or record an audio file first');
@@ -133,9 +140,13 @@ export function STTPage() {
   const inputContent = (
     <div className="h-full p-6 flex flex-col items-center justify-center">
       <div className="w-full space-y-6">
-        <AudioInput onFileSelect={handleFileSelect} />
+        <AudioInput 
+          onFileSelect={handleFileSelect}
+          selectedFile={selectedFile}
+          onRemove={handleRemoveFile}
+        />
         
-        {selectedFile && (
+        {selectedFile && !showOutput && (
           <div className="flex justify-center">
             <Button 
               size="lg"
