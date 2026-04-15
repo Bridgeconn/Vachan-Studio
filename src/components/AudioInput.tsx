@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, Mic, Trash2, Play, Pause, X, Check, Pencil } from 'lucide-react';
 import WaveSurfer from 'wavesurfer.js';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
-const MAX_FILE_SIZE = 25 * 1024 * 1024; // 25MB in bytes
+const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB in bytes
 const ALLOWED_EXTENSIONS = ['.wav', '.mp3', '.ogg'];
 const ALLOWED_MIME_TYPES = ['audio/wav', 'audio/mpeg', 'audio/ogg', 'audio/mp3'];
 
@@ -92,7 +93,7 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
 
   const validateFile = (file: File): string | null => {
     if (file.size > MAX_FILE_SIZE) {
-      return `File size exceeds 25MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
+      return `File size exceeds 5MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
     }
 
     const fileName = file.name.toLowerCase();
@@ -246,7 +247,7 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
             <div>
               <p className="text-lg font-medium">Drop audio here</p>
               <p className="text-sm text-muted-foreground mt-1">
-                WAV, MP3, OGG • up to 25MB
+                WAV, MP3, OGG • up to 5MB
               </p>
             </div>
           </div>
@@ -272,7 +273,7 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
             variant={isRecording ? 'destructive' : 'outline'}
             onClick={isRecording ? stopRecording : startRecording}
           >
-            <Mic className="w-4 h-4 mr-2" />
+            <Mic className="w-4 h-4 mr-2 cursor-pointer" />
             {isRecording ? 'Stop Recording' : 'Record'}
           </Button>
         </div>
@@ -309,14 +310,14 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
                   }}
                 />
                 <span className="text-sm text-muted-foreground whitespace-nowrap">
-                  .{audioFile.name.split('.').pop()}
+                  .{audioFile?.name.split('.').pop()}
                 </span>
               </div>
             ) : (
-              <p className="font-medium text-sm truncate">{audioFile.name}</p>
+              <p className="font-medium text-sm truncate">{audioFile?.name}</p>
             )}
             <p className="text-xs text-muted-foreground">
-              {(audioFile.size / 1024 / 1024).toFixed(2)} MB
+              {audioFile?.size ? (audioFile.size / 1024 / 1024).toFixed(2) : '0'} MB
             </p>
           </div>
         </div>
@@ -348,25 +349,37 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
           ) : (
             <>
               {isRecorded && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
                   onClick={startEditing}
-                  title="Edit filename"
                 >
                   <Pencil className="w-3 h-3" />
                 </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Edit filename</p>
+                  </TooltipContent>
+                </Tooltip>
               )}
+              <Tooltip>
+                <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8"
+                className="h-8 w-8 cursor-pointer"
                 onClick={handleRemove}
-                title="Remove audio"
               >
                 <Trash2 className="w-4 h-4" />
               </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Remove audio</p>
+                </TooltipContent>
+              </Tooltip>
             </>
           )}
         </div>
@@ -380,13 +393,14 @@ export function AudioInput({ onFileSelect, selectedFile, disabled = false, onRem
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
+              className='w-9 h-9 cursor-pointer'
               size="icon"
               onClick={togglePlayPause}
             >
               {isPlaying ? (
                 <Pause className="w-4 h-4" />
               ) : (
-                <Play className="w-4 h-4" />
+                <Play className="w-4 h-4 " />
               )}
             </Button>
             <span className="text-xs text-muted-foreground">

@@ -66,10 +66,10 @@ export function STTSettings({
     <div className="space-y-4">
       {/* Tabs */}
       <div className="flex border-b">
-        <button className="px-4 py-2 border-b-2 border-primary font-medium text-sm">
+        <button className="px-4 py-2 border-b-2 border-primary font-medium text-sm cursor-pointer">
           Input
         </button>
-        <button className="px-4 py-2 text-muted-foreground text-sm hover:text-foreground">
+        <button className="px-4 py-2 text-muted-foreground text-sm hover:text-foreground cursor-pointer">
           Output
         </button>
       </div>
@@ -83,7 +83,7 @@ export function STTSettings({
           <select
             value={selectedLanguage}
             onChange={(e) => handleLanguageSelect(e.target.value)}
-            className="w-full p-2 border rounded-lg text-sm appearance-none pr-8"
+            className="w-full p-2 border rounded-lg text-sm appearance-none pr-8 cursor-pointer"
           >
             <option value="">Select language</option>
             {filteredLanguages.map((lang) => (
@@ -113,7 +113,7 @@ export function STTSettings({
       <div className="border-t pt-4">
         <Button
           variant="ghost"
-          className="w-full justify-between p-2 h-auto"
+          className="w-full justify-between p-2 h-auto cursor-pointer"
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <span className="text-sm font-medium">Advanced Settings</span>
@@ -130,7 +130,7 @@ export function STTSettings({
               <select
                 value={device}
                 onChange={(e) => onDeviceChange(e.target.value)}
-                className="w-full p-2 border rounded-lg text-sm"
+                className="w-full p-2 border rounded-lg text-sm cursor-pointer"
               >
                 <option value="cpu">CPU</option>
                 <option value="gpu">GPU</option>
@@ -146,7 +146,7 @@ export function STTSettings({
                     id="timestamp"
                     checked={generateTimestamp}
                     onChange={(e) => onTimestampChange(e.target.checked)}
-                    className="w-4 h-4"
+                    className="w-4 h-4 cursor-pointer"
                   />
                   <label htmlFor="timestamp" className="text-sm font-medium">
                     Generate Timestamps
@@ -159,7 +159,7 @@ export function STTSettings({
                     <select
                       value={timestampFormat}
                       onChange={(e) => onTimestampFormatChange(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-sm"
+                      className="w-full p-2 border rounded-lg text-sm cursor-pointer"
                     >
                       <option value="srt">SRT</option>
                       <option value="vtt">VTT</option>

@@ -3,6 +3,7 @@
 import { Moon, Sun, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';
+import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip';
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -44,38 +45,53 @@ export function Header({
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
           {/* About */}
-          <Button variant="ghost" size="sm">
+          <Button className='cursor-pointer' variant="ghost" size="sm">
             About
           </Button>
 
           {/* Theme Toggle */}
-          <Button 
+          <Tooltip>
+            <TooltipTrigger asChild>
+          <Button
+            className='cursor-pointer' 
             variant="ghost" 
             size="icon"
             onClick={toggleTheme}
-            title="Toggle theme"
           >
             {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
           </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Toggle theme</p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Notifications / Files */}
           <div className="relative">
-            <Button 
+            <Tooltip>
+              <TooltipTrigger asChild>
+            <Button
+              className='cursor-pointer' 
               variant="ghost" 
               size="icon"
               onClick={onNotificationsClick}
-              title="View outputs"
             >
               <FileText className="h-5 w-5" />
               {hasNotifications && (
                 <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
               )}
             </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>View outputs</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
 
           {/* Login/Logout */}
           {isLoggedIn ? (
-            <Button 
+            <Button
+              className='cursor-pointer' 
               variant="default" 
               size="sm"
               onClick={onLogoutClick}
@@ -83,7 +99,8 @@ export function Header({
               Logout
             </Button>
           ) : (
-            <Button 
+            <Button
+              className='cursor-pointer' 
               variant="default" 
               size="sm"
               onClick={onLoginClick}

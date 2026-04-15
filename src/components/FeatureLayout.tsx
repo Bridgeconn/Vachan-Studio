@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
 interface FeatureLayoutProps {
   featureName: string;
@@ -54,22 +55,37 @@ export function FeatureLayout({
           <div className="p-4 space-y-4 h-full flex flex-col">
             {/* Header with collapse and home */}
             <div className="flex items-center justify-between">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => navigate("/")}
-                title="Go to homepage"
-              >
-                <Home className="h-5 w-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setLeftPanelOpen(false)}
-                title="Collapse panel"
-              >
-                <ChevronLeft className="h-5 w-5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="cursor-pointer"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate("/")}
+                  >
+                    <Home className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Go to homepage</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="cursor-pointer"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setLeftPanelOpen(false)}
+                  >
+                    <ChevronLeft className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Collapse panel</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Feature Name */}
@@ -77,7 +93,7 @@ export function FeatureLayout({
 
             {/* New Button - conditionally shown */}
             {showNewButton && (
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full cursor-pointer">
                 New
               </Button>
             )}
@@ -140,27 +156,35 @@ export function FeatureLayout({
       {/* Middle Panel - Input/Output */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* View controls - top right */}
-        <div className="h-12 flex items-center justify-end px-4 gap-2 shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={toggleViewMode}
-            title={
-              viewMode === "horizontal"
-                ? "Switch to vertical split"
-                : "Switch to horizontal split"
-            }
-          >
-            {viewMode === "horizontal" ? (
-              <SquareCenterlineDashedVertical className="h-5 w-5" />
-            ) : (
-              <SquareCenterlineDashedHorizontal className="h-5 w-5" />
-            )}
-          </Button>
+        <div className="h-12 flex items-center justify-end px-2 gap-2 shrink-0">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                className="cursor-pointer"
+                variant="ghost"
+                size="icon"
+                onClick={toggleViewMode}
+              >
+                {viewMode === "horizontal" ? (
+                  <SquareCenterlineDashedVertical className="h-5 w-5" />
+                ) : (
+                  <SquareCenterlineDashedHorizontal className="h-5 w-5" />
+                )}
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>
+                {viewMode === "horizontal"
+                  ? "Switch to vertical split"
+                  : "Switch to horizontal split"}
+              </p>
+            </TooltipContent>
+          </Tooltip>
 
           {/* Only show settings icon when panel is closed */}
           {!rightPanelOpen && (
             <Button
+              className="cursor-pointer"
               variant="ghost"
               size="icon"
               onClick={() => setRightPanelOpen(true)}
@@ -185,14 +209,21 @@ export function FeatureLayout({
           <div className="p-4 h-full flex flex-col">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Settings</h3>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setRightPanelOpen(false)}
-                title="Hide settings"
-              >
-                <ChevronRight className="h-5 w-5" />
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="cursor-pointer"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setRightPanelOpen(false)}
+                  >
+                    <ChevronRight className="h-5 w-5" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Hide settings</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
 
             {/* Settings content passed as prop */}
