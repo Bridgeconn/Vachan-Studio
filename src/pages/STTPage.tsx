@@ -8,7 +8,16 @@ import { STTSettings } from "@/components/STTSettings";
 import { Button } from "@/components/ui/button";
 import { useAuthStore } from "@/store/authStore";
 import { aiEngineService } from "@/services/aiEngine";
-import { Loader2, Copy, Download, Info, Type, X } from "lucide-react";
+import {
+  Loader2,
+  Copy,
+  Download,
+  Info,
+  Type,
+  Pencil,
+  Check,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   HoverCard,
@@ -40,6 +49,8 @@ export function STTPage() {
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "small",
   );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedText, setEditedText] = useState("");
 
   // Get token from auth store
   const { token } = useAuthStore();
@@ -70,6 +81,22 @@ export function STTPage() {
     setShowOutput(false);
     setCurrentJobId(null);
     setTranscriptionResult("");
+  };
+
+  const handleEditStart = () => {
+    setEditedText(transcriptionResult);
+    setIsEditing(true);
+  };
+
+  const handleEditSave = () => {
+    setTranscriptionResult(editedText);
+    setIsEditing(false);
+    toast.success("Transcription updated!");
+  };
+
+  const handleEditCancel = () => {
+    setEditedText("");
+    setIsEditing(false);
   };
 
   const handleSubmit = async () => {
@@ -191,184 +218,253 @@ export function STTPage() {
   );
 
   // Output section content
-  // Output section content
   const outputContent = showOutput ? (
     <div className="h-full p-6">
-      <div className="h-full border rounded-lg p-6 bg-muted/30">
+      <div className="h-full border rounded-lg p-6 bg-muted/30 flex flex-col">
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold">Transcribed Text</h3>
 
           {/* Action Icons - Only show when result exists */}
           {transcriptionResult && (
             <div className="flex items-center gap-1">
-              {/* Copy Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-pointer"
-                    onClick={() => {
-                      navigator.clipboard.writeText(transcriptionResult);
-                      toast.success("Copied to clipboard!");
-                    }}
-                  >
-                    <Copy className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copy</p>
-                </TooltipContent>
-              </Tooltip>
+              {isEditing ? (
+                <>
+                  {/* Save Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer text-green-600 hover:text-green-700"
+                        onClick={handleEditSave}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Save changes</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-              {/* Download Button */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-pointer"
-                    onClick={() => {
-                      const blob = new Blob([transcriptionResult], {
-                        type: "text/plain",
-                      });
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement("a");
-                      a.href = url;
-                      a.download = `transcription_${currentJobId}.txt`;
-                      a.click();
-                      URL.revokeObjectURL(url);
-                    }}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Download</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Font Size Toggle */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-pointer"
-                    onClick={() => {
-                      setFontSize((prev) =>
-                        prev === "small"
-                          ? "medium"
-                          : prev === "medium"
-                            ? "large"
-                            : "small",
-                      );
-                    }}
-                  >
-                    <Type
-                      className={`h-4 w-4 ${
-                        fontSize === "small"
-                          ? "scale-75"
-                          : fontSize === "medium"
-                            ? "scale-100"
-                            : "scale-125"
-                      }`}
-                    />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Font size: {fontSize}</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Info HoverCard */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HoverCard openDelay={0} closeDelay={0}>
-                    <HoverCardTrigger asChild>
+                  {/* Cancel Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer text-red-600 hover:text-red-700"
+                        onClick={handleEditCancel}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cancel editing</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              ) : (
+                <>
+                  {/* Copy Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 cursor-pointer"
+                        onClick={() => {
+                          navigator.clipboard.writeText(transcriptionResult);
+                          toast.success("Copied to clipboard!");
+                        }}
                       >
-                        <Info className="h-4 w-4" />
+                        <Copy className="h-4 w-4" />
                       </Button>
-                    </HoverCardTrigger>
-                    <HoverCardContent className="w-52">
-                      <div className="space-y-3">
-                        <h4 className="font-semibold text-sm">
-                          Job Information
-                        </h4>
-                        {/* Job Details */}
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Job ID:
-                            </span>
-                            <span className="font-mono">{currentJobId}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Language:
-                            </span>
-                            <span>{selectedLanguage}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Model:
-                            </span>
-                            <span>{selectedModel}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Device:
-                            </span>
-                            <span>{device.toUpperCase()}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">
-                              Timestamp:
-                            </span>
-                            <span>
-                              {generateTimestamp ? "Enabled" : "Disabled"}
-                            </span>
-                          </div>
-                          {generateTimestamp && (
-                            <div className="flex justify-between">
-                              <span className="text-muted-foreground">
-                                Format:
-                              </span>
-                              <span>{timestampFormat.toUpperCase()}</span>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Download Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer"
+                        onClick={() => {
+                          const blob = new Blob([transcriptionResult], {
+                            type: "text/plain",
+                          });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement("a");
+                          a.href = url;
+                          a.download = `transcription_${currentJobId}.txt`;
+                          a.click();
+                          URL.revokeObjectURL(url);
+                        }}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Edit Button */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer"
+                        onClick={handleEditStart}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Edit transcription</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Font Size Toggle */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer"
+                        onClick={() => {
+                          setFontSize((prev) =>
+                            prev === "small"
+                              ? "medium"
+                              : prev === "medium"
+                                ? "large"
+                                : "small",
+                          );
+                        }}
+                      >
+                        <Type
+                          className={`h-4 w-4 ${
+                            fontSize === "small"
+                              ? "scale-75"
+                              : fontSize === "medium"
+                                ? "scale-100"
+                                : "scale-125"
+                          }`}
+                        />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Font size: {fontSize}</p>
+                    </TooltipContent>
+                  </Tooltip>
+
+                  {/* Info HoverCard */}
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <HoverCard openDelay={0} closeDelay={0}>
+                        <HoverCardTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 cursor-pointer"
+                          >
+                            <Info className="h-4 w-4" />
+                          </Button>
+                        </HoverCardTrigger>
+                        <HoverCardContent className="w-52">
+                          <div className="space-y-3">
+                            <h4 className="font-semibold text-sm">
+                              Job Information
+                            </h4>
+                            <div className="space-y-2 text-sm">
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Job ID:
+                                </span>
+                                <span className="font-mono">
+                                  {currentJobId}
+                                </span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Language:
+                                </span>
+                                <span>{selectedLanguage}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Model:
+                                </span>
+                                <span>{selectedModel}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Device:
+                                </span>
+                                <span>{device.toUpperCase()}</span>
+                              </div>
+                              <div className="flex justify-between">
+                                <span className="text-muted-foreground">
+                                  Timestamp:
+                                </span>
+                                <span>
+                                  {generateTimestamp ? "Enabled" : "Disabled"}
+                                </span>
+                              </div>
+                              {generateTimestamp && (
+                                <div className="flex justify-between">
+                                  <span className="text-muted-foreground">
+                                    Format:
+                                  </span>
+                                  <span>{timestampFormat.toUpperCase()}</span>
+                                </div>
+                              )}
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    </HoverCardContent>
-                  </HoverCard>
-                </TooltipTrigger>
-                {/* <TooltipContent>
-                  <p>Job information</p>
-                </TooltipContent> */}
-              </Tooltip>
+                          </div>
+                        </HoverCardContent>
+                      </HoverCard>
+                    </TooltipTrigger>
+                  </Tooltip>
+                </>
+              )}
             </div>
           )}
         </div>
 
         {transcriptionResult ? (
           // Show actual result
-          <div className="space-y-4">
-            <div className="p-4 bg-background rounded-lg max-h-[600px] overflow-y-auto">
-              <p
-                className={`whitespace-pre-wrap ${
-                  fontSize === "small"
-                    ? "text-sm"
-                    : fontSize === "medium"
-                      ? "text-base"
-                      : "text-lg"
-                }`}
-              >
-                {transcriptionResult}
-              </p>
+          <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 p-4 bg-background rounded-lg overflow-y-auto">
+              {isEditing ? (
+                <textarea
+                  value={editedText}
+                  onChange={(e) => setEditedText(e.target.value)}
+                  className={`w-full min-h-full block bg-transparent border-none outline-none resize-none focus:ring-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] ${
+                    fontSize === "small"
+                      ? "text-sm"
+                      : fontSize === "medium"
+                        ? "text-base"
+                        : "text-lg"
+                  }`}
+                  autoFocus
+                />
+              ) : (
+                <p
+                  className={`whitespace-pre-wrap ${
+                    fontSize === "small"
+                      ? "text-sm"
+                      : fontSize === "medium"
+                        ? "text-base"
+                        : "text-lg"
+                  }`}
+                >
+                  {transcriptionResult}
+                </p>
+              )}
             </div>
           </div>
         ) : (

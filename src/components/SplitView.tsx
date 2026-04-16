@@ -17,7 +17,7 @@ export function SplitView({
   viewMode,
   showOutput 
 }: SplitViewProps) {
-  const [splitPosition, setSplitPosition] = useState(50); // Percentage
+  const [splitPosition, setSplitPosition] = useState(45); // Percentage
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
