@@ -1,8 +1,9 @@
 // src/components/STTSettings.tsx
 
-import { useState, useEffect } from "react";
-import { ChevronDown } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronDown, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   getAllLanguages,
   getRecommendedModel,
@@ -38,14 +39,43 @@ export function STTSettings({
 }: STTSettingsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [languages, setLanguages] = useState<Language[]>([]);
+  const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setLanguages(getAllLanguages());
+    // Get and sort languages alphabetically
+    const allLanguages = getAllLanguages();
+    const sorted = [...allLanguages].sort((a, b) =>
+      a.lang_name.localeCompare(b.lang_name),
+    );
+    setLanguages(sorted);
   }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   const handleLanguageSelect = (langCode: string) => {
     onLanguageChange(langCode);
+    setIsOpen(false);
+    setSearchTerm("");
 
     // Auto-select recommended model
     const recommended = getRecommendedModel(langCode);
@@ -54,11 +84,14 @@ export function STTSettings({
     }
   };
 
-  const filteredLanguages = languages.filter(
-    (lang) =>
-      lang.lang_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      lang.lang_code.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  // Filter languages based on search
+  const filteredLanguages = searchTerm
+    ? languages.filter(
+        (lang) =>
+          lang.lang_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          lang.lang_code.toLowerCase().includes(searchTerm.toLowerCase()),
+      )
+    : languages.slice(0, 100); // Show only first 100 when not searching
 
   const selectedLangName =
     languages.find((l) => l.lang_code === selectedLanguage)?.lang_name ||
@@ -74,34 +107,87 @@ export function STTSettings({
         </button>
       </div>
 
-      {/* Language Selection */}
-      <div className="space-y-2">
+      {/* Language Selection - Simple Searchable */}
+      <div className="space-y-2" ref={dropdownRef}>
         <label className="text-sm font-medium">
           Audio Language <span className="text-destructive">*</span>
         </label>
-        <div className="relative">
-          <select
-            value={selectedLanguage}
-            onChange={(e) => handleLanguageSelect(e.target.value)}
-            className="w-full p-2 border rounded-lg text-sm appearance-none pr-8 cursor-pointer"
+
+        {/* Trigger Button */}
+        <button
+          type="button"
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full flex items-center justify-between p-2 border rounded-lg text-sm hover:bg-accent transition-colors"
+        >
+          <span
+            className={
+              selectedLanguage ? "text-foreground" : "text-muted-foreground"
+            }
           >
-            <option value="">Select language</option>
-            {filteredLanguages.map((lang) => (
-              <option key={lang.lang_code} value={lang.lang_code}>
-                {lang.lang_name} ({lang.lang_code})
-              </option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        </div>
+            {selectedLanguage ? selectedLangName : "Select language"}
+          </span>
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          />
+        </button>
+
+        {/* Dropdown */}
+        {isOpen && (
+          <div className="absolute z-50 w-[var(--radix-popover-trigger-width)] mt-1 border rounded-lg bg-background shadow-lg">
+            {/* Search Input */}
+            <div className="p-2 border-b sticky top-0 bg-background">
+              <div className="relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search language..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-8 pr-8 h-9 text-sm"
+                  autoFocus
+                />
+                {searchTerm && (
+                  <button
+                    onClick={() => setSearchTerm("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 hover:bg-accent rounded p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Results List */}
+            <div className="max-h-[300px] overflow-y-auto">
+              {filteredLanguages.length > 0 ? (
+                filteredLanguages.map((lang) => (
+                  <button
+                    key={lang.lang_code}
+                    onClick={() => handleLanguageSelect(lang.lang_code)}
+                    className={`w-full text-left px-3 py-2 text-sm hover:bg-accent transition-colors ${
+                      selectedLanguage === lang.lang_code
+                        ? "bg-accent font-medium"
+                        : ""
+                    }`}
+                  >
+                    {lang.lang_name} ({lang.lang_code})
+                  </button>
+                ))
+              ) : (
+                <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                  No language found
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Model (Auto-selected) */}
       {selectedLanguage && (
         <div className="space-y-2">
           <label className="text-sm font-medium">Model</label>
-          <div className="p-1 bg-muted/50 rounded-lg">
-            <p className="text-sm font-stretch-50%">
+          <div className="p-3 bg-muted/50 rounded-lg">
+            <p className="text-sm font-medium">
               {getModelDisplayName(selectedModel)}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
@@ -109,7 +195,6 @@ export function STTSettings({
             </p>
             {selectedModel === "mms-1b-all" && (
               <div className="flex items-center gap-2 mt-2 text-xs text-primary">
-                {/* <Highlighter className="h-4 w-4 ml-2 mt-0.5" /> */}
                 <span className="font-medium">
                   Supports word-level highlighting in SRT format
                 </span>
