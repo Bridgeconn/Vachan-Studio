@@ -1,3 +1,5 @@
+import { HighlightedTranscription } from "@/components/HighlightedTranscription";
+import { extractSRTFromZip } from "@/utils/zipExtractor";
 import { useState, useEffect } from "react";
 import { useJobStore } from "@/store/jobStore";
 import { useSSESync } from "@/hooks/useSSESync";
@@ -17,6 +19,7 @@ import {
   Pencil,
   Check,
   X,
+  Highlighter,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -51,6 +54,19 @@ export function STTPage() {
   );
   const [isEditing, setIsEditing] = useState(false);
   const [editedText, setEditedText] = useState("");
+  const [srtText, setSrtText] = useState<string | null>(null);
+  const [wavesurferInstance, setWavesurferInstance] = useState<any>(null);
+  const [isLoadingSRT, setIsLoadingSRT] = useState(false);
+  const [highlightingEnabled, setHighlightingEnabled] = useState(false);
+  const [hasEditedText, setHasEditedText] = useState(false);
+  const [settingsChanged, setSettingsChanged] = useState(false);
+  const [lastSubmittedSettings, setLastSubmittedSettings] = useState({
+    language: "",
+    model: "",
+    device: "cpu",
+    timestamp: true,
+    format: "srt",
+  });
 
   // Get token from auth store
   const { token } = useAuthStore();
@@ -81,22 +97,57 @@ export function STTPage() {
     setShowOutput(false);
     setCurrentJobId(null);
     setTranscriptionResult("");
+    setSrtText(null);
+    setHasEditedText(false);
+    // setHighlightingEnabled(true);
   };
 
   const handleEditStart = () => {
     setEditedText(transcriptionResult);
     setIsEditing(true);
+    if (srtText && !hasEditedText) {
+      toast.warning("Editing the text will remove word-level highlighting");
+    }
   };
 
   const handleEditSave = () => {
     setTranscriptionResult(editedText);
     setIsEditing(false);
+    setHasEditedText(true); // Mark as edited
+    setSrtText(null); // Disable highlighting
     toast.success("Transcription updated!");
   };
 
   const handleEditCancel = () => {
     setEditedText("");
     setIsEditing(false);
+  };
+
+  const fetchSRTData = async (jobId: number) => {
+    if (!token || !generateTimestamp) return;
+
+    setIsLoadingSRT(true);
+
+    try {
+      console.log("Fetching SRT assets for job:", jobId);
+
+      // Download assets ZIP
+      const zipBlob = await aiEngineService.getJobAssets(jobId, token);
+
+      // Extract SRT from ZIP
+      const srtContent = await extractSRTFromZip(zipBlob);
+
+      if (srtContent) {
+        console.log("SRT extracted successfully");
+        setSrtText(srtContent);
+      } else {
+        console.warn("No SRT content found");
+      }
+    } catch (error) {
+      console.error("Failed to fetch SRT:", error);
+    } finally {
+      setIsLoadingSRT(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -114,7 +165,11 @@ export function STTPage() {
       alert("Please login first");
       return;
     }
-
+    setTranscriptionResult("");
+    setSrtText(null);
+    setHasEditedText(false);
+    // setHighlightingEnabled(true);
+    setSettingsChanged(false);
     setIsSubmitting(true);
 
     try {
@@ -151,6 +206,14 @@ export function STTPage() {
       setShowOutput(true);
       setHasSubmitted(true);
       setTranscriptionResult(""); // Clear previous result
+
+      setLastSubmittedSettings({
+        language: selectedLanguage,
+        model: selectedModel,
+        device: device,
+        timestamp: generateTimestamp,
+        format: timestampFormat,
+      });
 
       // TODO: SSE will notify us when complete (Phase 2)
       // For now, we can poll or wait for SSE notification
@@ -190,9 +253,10 @@ export function STTPage() {
           onFileSelect={handleFileSelect}
           selectedFile={selectedFile}
           onRemove={handleRemoveFile}
+          onWavesurferReady={setWavesurferInstance}
         />
 
-        {selectedFile && !showOutput && (
+        {selectedFile && (!showOutput || settingsChanged) && (
           <div className="flex justify-center">
             <Button
               size="lg"
@@ -362,6 +426,36 @@ export function STTPage() {
                     </TooltipContent>
                   </Tooltip>
 
+                  {/* Add Highlighting Toggle - Only show if SRT available and model supports it */}
+                  {srtText &&
+                    selectedModel === "mms-1b-all" &&
+                    !hasEditedText && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 cursor-pointer"
+                            onClick={() =>
+                              setHighlightingEnabled(!highlightingEnabled)
+                            }
+                          >
+                            <Highlighter
+                              className={`h-4 w-4 ${
+                                highlightingEnabled ? "text-primary" : ""
+                              }`}
+                            />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>
+                            {highlightingEnabled ? "Disable" : "Enable"} word
+                            highlighting
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
+
                   {/* Info HoverCard */}
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -452,6 +546,22 @@ export function STTPage() {
                   }`}
                   autoFocus
                 />
+              ) : isLoadingSRT && !hasEditedText ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                  <span className="text-sm text-muted-foreground">
+                    Loading word-level timestamps...
+                  </span>
+                </div>
+              ) : highlightingEnabled &&
+                srtText &&
+                wavesurferInstance &&
+                !hasEditedText ? (
+                <HighlightedTranscription
+                  srtText={srtText}
+                  wavesurfer={wavesurferInstance}
+                  fontSize={fontSize}
+                />
               ) : (
                 <p
                   className={`whitespace-pre-wrap ${
@@ -491,16 +601,6 @@ export function STTPage() {
   ) : null;
 
   // Watch for job completion
-  // useEffect(() => {
-  //   if (currentJobId) {
-  //     const job = getJobByJobId(currentJobId);
-  //     if (job?.output?.transcribedText) {
-  //       setTranscriptionResult(job.output.transcribedText);
-  //     }
-  //   }
-  // }, [currentJobId, getJobByJobId]);
-
-  // Watch for job completion
   useEffect(() => {
     if (currentJob?.output?.transcribedText) {
       console.log(
@@ -508,8 +608,38 @@ export function STTPage() {
         currentJob.output.transcribedText,
       );
       setTranscriptionResult(currentJob.output.transcribedText);
+
+      // Fetch SRT if timestamps were enabled
+      if (generateTimestamp && currentJobId) {
+        fetchSRTData(currentJobId);
+      }
     }
-  }, [currentJob]);
+  }, [currentJob, generateTimestamp, currentJobId]);
+
+  useEffect(() => {
+    if (!showOutput) return; // Only check after output exists
+
+    const hasChanged =
+      selectedLanguage !== lastSubmittedSettings.language ||
+      selectedModel !== lastSubmittedSettings.model ||
+      device !== lastSubmittedSettings.device ||
+      generateTimestamp !== lastSubmittedSettings.timestamp ||
+      timestampFormat !== lastSubmittedSettings.format;
+
+    if (hasChanged && !settingsChanged) {
+      setSettingsChanged(true);
+      toast.info("Settings updated - click Transcribe Audio to apply changes");
+    }
+  }, [
+    selectedLanguage,
+    selectedModel,
+    device,
+    generateTimestamp,
+    timestampFormat,
+    showOutput,
+    lastSubmittedSettings,
+    settingsChanged,
+  ]);
 
   return (
     <FeatureLayout

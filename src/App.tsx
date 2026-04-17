@@ -9,7 +9,7 @@ function App() {
   return (
     <TooltipProvider delayDuration={0}>
       <RouterProvider router={router} />
-      <Toaster />
+      <Toaster position="top-center" />
     </TooltipProvider>
   );
 }

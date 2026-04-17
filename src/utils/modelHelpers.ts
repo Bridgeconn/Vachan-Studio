@@ -68,9 +68,9 @@ export function supportsTimestamp(modelName: string): boolean {
 // Get display name for model
 export function getModelDisplayName(modelName: string): string {
   const displayNames: Record<string, string> = {
-    'mms-1b-all': 'MMS 1B All',
-    'mms-finetuned': 'MMS Finetuned',
-    'omniASR_CTC_1B': 'Omni ASR CTC 1B'
+    'mms-1b-all': 'mms-1b-all',
+    'mms-finetuned': 'mms-finetuned',
+    'omniASR_CTC_1B': 'omniASR_CTC_1B',
   };
   return displayNames[modelName] || modelName;
 }

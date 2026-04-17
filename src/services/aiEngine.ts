@@ -83,6 +83,33 @@ async submitSTTJob(
   }
 
   /**
+ * Get job assets (downloads ZIP with SRT file)
+ */
+  async getJobAssets(jobId: number, token: string): Promise<Blob> {
+    const url = `${API_BASE_URL}/assets?job_id=${jobId}`;
+  
+    console.log('Fetching assets for job:', jobId);
+  
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/json",
+      },
+    });
+  
+    if (!response.ok) {
+      throw new Error(`Failed to get job assets: ${response.status}`);
+    }
+  
+    // Return the ZIP file as a blob
+    const blob = await response.blob();
+    console.log('Assets downloaded, size:', blob.size, 'bytes');
+    
+    return blob;
+  }
+
+  /**
    * Cancel a job (placeholder - add endpoint when available)
    */
   async cancelJob(jobId: number, token: string): Promise<void> {

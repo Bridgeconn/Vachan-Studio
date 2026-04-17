@@ -1,15 +1,15 @@
 // src/components/STTSettings.tsx
 
-import { useState, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { 
-  getAllLanguages, 
-  getRecommendedModel, 
+import { useState, useEffect } from "react";
+import { ChevronDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  getAllLanguages,
+  getRecommendedModel,
   supportsTimestamp,
-  getModelDisplayName 
-} from '@/utils/modelHelpers';
-import type { Language } from '@/utils/modelHelpers';
+  getModelDisplayName,
+} from "@/utils/modelHelpers";
+import type { Language } from "@/utils/modelHelpers";
 
 interface STTSettingsProps {
   selectedLanguage: string;
@@ -38,7 +38,7 @@ export function STTSettings({
 }: STTSettingsProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [languages, setLanguages] = useState<Language[]>([]);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     setLanguages(getAllLanguages());
@@ -46,7 +46,7 @@ export function STTSettings({
 
   const handleLanguageSelect = (langCode: string) => {
     onLanguageChange(langCode);
-    
+
     // Auto-select recommended model
     const recommended = getRecommendedModel(langCode);
     if (recommended) {
@@ -54,23 +54,23 @@ export function STTSettings({
     }
   };
 
-  const filteredLanguages = languages.filter((lang) =>
-    lang.lang_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    lang.lang_code.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredLanguages = languages.filter(
+    (lang) =>
+      lang.lang_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lang.lang_code.toLowerCase().includes(searchTerm.toLowerCase()),
   );
 
-  const selectedLangName = languages.find(l => l.lang_code === selectedLanguage)?.lang_name || 'Select language';
+  const selectedLangName =
+    languages.find((l) => l.lang_code === selectedLanguage)?.lang_name ||
+    "Select language";
   const modelSupportsTimestamp = supportsTimestamp(selectedModel);
 
   return (
     <div className="space-y-4">
       {/* Tabs */}
       <div className="flex border-b">
-        <button className="px-4 py-2 border-b-2 border-primary font-medium text-sm cursor-pointer">
+        <button className="px-4 py-2 border-b-2 border-primary font-medium text-sm">
           Input
-        </button>
-        <button className="px-4 py-2 text-muted-foreground text-sm hover:text-foreground cursor-pointer">
-          Output
         </button>
       </div>
 
@@ -100,11 +100,21 @@ export function STTSettings({
       {selectedLanguage && (
         <div className="space-y-2">
           <label className="text-sm font-medium">Model</label>
-          <div className="p-3 bg-muted/50 rounded-lg">
-            <p className="text-sm font-medium">{getModelDisplayName(selectedModel)}</p>
+          <div className="p-1 bg-muted/50 rounded-lg">
+            <p className="text-sm font-stretch-50%">
+              {getModelDisplayName(selectedModel)}
+            </p>
             <p className="text-xs text-muted-foreground mt-1">
               ℹ️ Auto-selected for {selectedLangName}
             </p>
+            {selectedModel === "mms-1b-all" && (
+              <div className="flex items-center gap-2 mt-2 text-xs text-primary">
+                {/* <Highlighter className="h-4 w-4 ml-2 mt-0.5" /> */}
+                <span className="font-medium">
+                  Supports word-level highlighting in SRT format
+                </span>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -117,8 +127,8 @@ export function STTSettings({
           onClick={() => setShowAdvanced(!showAdvanced)}
         >
           <span className="text-sm font-medium">Advanced Settings</span>
-          <ChevronDown 
-            className={`h-4 w-4 transition-transform ${showAdvanced ? 'rotate-180' : ''}`} 
+          <ChevronDown
+            className={`h-4 w-4 transition-transform ${showAdvanced ? "rotate-180" : ""}`}
           />
         </Button>
 
