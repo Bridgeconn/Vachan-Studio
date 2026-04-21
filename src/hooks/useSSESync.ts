@@ -10,7 +10,7 @@ import { useJobStore } from '@/store/jobStore';
  */
 export function useSSESync(token: string | null) {
   const { getActiveJobs, updateJobByJobId } = useJobStore();
-  const pollingIntervalRef = useRef<number | null>(null);
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     if (!token) {
@@ -77,23 +77,6 @@ export function useSSESync(token: string | null) {
     };
   }, [token, getActiveJobs, updateJobByJobId]);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 // // src/hooks/useSSESync.ts   ----------------> FOR SSE (NOT WORKING DUE TO CORS)
 

@@ -140,6 +140,16 @@ export function STTPage() {
       if (srtContent) {
         console.log("SRT extracted successfully");
         setSrtText(srtContent);
+
+        // Save SRT to job in IndexedDB
+        if (currentJobId) {
+          updateJobByJobId(currentJobId, {
+            output: {
+              ...currentJob?.output,
+              srtText: srtContent,
+            },
+          });
+        }
       } else {
         console.warn("No SRT content found");
       }
@@ -184,7 +194,7 @@ export function STTPage() {
 
       console.log("Job submitted successfully! Job ID:", jobId);
 
-      // Add job to store
+      // Add job to store (with audio blob for IndexedDB)
       addJob({
         jobId,
         type: "stt",
@@ -192,9 +202,13 @@ export function STTPage() {
         input: {
           fileName: selectedFile.name,
           fileSize: selectedFile.size,
+          audioBlob: selectedFile, // Save the audio file
           params: {
             language: selectedLanguage,
             model: selectedModel,
+            device: device,
+            timestamp: generateTimestamp,
+            format: timestampFormat,
           },
         },
       });
@@ -637,8 +651,13 @@ export function STTPage() {
       );
       setTranscriptionResult(currentJob.output.transcribedText);
 
-      // Fetch SRT if timestamps were enabled
-      if (generateTimestamp && currentJobId) {
+      // Fetch SRT if timestamps were enabled AND we don't already have it
+      if (
+        generateTimestamp &&
+        currentJobId &&
+        !srtText &&
+        !currentJob.output?.srtText
+      ) {
         fetchSRTData(currentJobId);
       }
     }

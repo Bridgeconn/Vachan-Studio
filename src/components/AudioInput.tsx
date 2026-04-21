@@ -329,7 +329,7 @@ export function AudioInput({
       {/* File Info */}
       <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg gap-3">
         <div className="flex items-center gap-3 flex-1 min-w-0">
-          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
             ✓
           </div>
           <div className="flex-1 min-w-0">
