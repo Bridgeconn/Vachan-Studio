@@ -9,6 +9,7 @@ export interface Job {
   type: FeatureType;
   status: JobStatus;
   saved: boolean;
+  dismissed: boolean;
   createdAt: number;
   completedAt?: number;
   input: {
@@ -26,6 +27,7 @@ export interface Job {
   output?: {
     transcribedText?: string;
     srtText?: string;
+    textWasEdited?: boolean;
     audioUrl?: string;
     translatedText?: string;
     data?: any;

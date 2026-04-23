@@ -1,17 +1,19 @@
-import { create } from 'zustand';
-import type { Job, JobStatus, StoredJob } from '@/types';
+import { create } from "zustand";
+import type { Job, JobStatus, StoredJob } from "@/types";
 import {
   saveJobToDB,
   deleteJobFromDB,
   getAllJobsFromDB,
-} from '@/services/indexedDB';
+} from "@/services/indexedDB";
 
 interface JobStore {
   jobs: Job[];
   isLoaded: boolean; // Track if we've loaded from IndexedDB
-  
+
   // Actions
-  addJob: (job: Omit<Job, 'id' | 'createdAt' | 'saved'>) => string;
+  addJob: (
+    job: Omit<Job, "id" | "createdAt" | "saved" | "dismissed">,
+  ) => string;
   updateJob: (id: string, updates: Partial<Job>) => void;
   updateJobByJobId: (jobId: number, updates: Partial<Job>) => void;
   removeJob: (id: string) => void;
@@ -19,7 +21,8 @@ interface JobStore {
   getJobByJobId: (jobId: number) => Job | undefined;
   loadJobsFromDB: () => Promise<void>;
   toggleJobSaved: (id: string) => Promise<void>;
-  
+  dismissJob: (id: string) => Promise<void>;
+
   // Selectors
   getActiveJobs: () => Job[];
   getCompletedJobs: () => Job[];
@@ -34,10 +37,11 @@ function jobToStoredJob(job: Job): StoredJob {
     type: job.type,
     status: job.status,
     saved: job.saved,
+    dismissed: job.dismissed,
     createdAt: job.createdAt,
     completedAt: job.completedAt,
     input: {
-      fileName: job.input.fileName || '',
+      fileName: job.input.fileName || "",
       fileSize: job.input.fileSize || 0,
       audioBlob: job.input.audioBlob,
       params: job.input.params,
@@ -55,6 +59,7 @@ function storedJobToJob(stored: StoredJob): Job {
     type: stored.type,
     status: stored.status,
     saved: stored.saved,
+    dismissed: stored.dismissed,
     createdAt: stored.createdAt,
     completedAt: stored.completedAt,
     input: {
@@ -78,9 +83,9 @@ export const useJobStore = create<JobStore>((set, get) => ({
       const storedJobs = await getAllJobsFromDB();
       const jobs = storedJobs.map(storedJobToJob);
       set({ jobs, isLoaded: true });
-      console.log('Loaded jobs from IndexedDB:', jobs.length);
+      console.log("Loaded jobs from IndexedDB:", jobs.length);
     } catch (error) {
-      console.error('Failed to load jobs from IndexedDB:', error);
+      console.error("Failed to load jobs from IndexedDB:", error);
       set({ isLoaded: true }); // Mark as loaded even on error
     }
   },
@@ -92,19 +97,20 @@ export const useJobStore = create<JobStore>((set, get) => ({
       ...job,
       id,
       saved: false, // New jobs are unsaved by default
+      dismissed: false, // ← ADD THIS LINE
       createdAt: Date.now(),
     };
-    
+
     // Update store
     set((state) => ({
       jobs: [...state.jobs, newJob],
     }));
-    
+
     // Save to IndexedDB (async, non-blocking)
     saveJobToDB(jobToStoredJob(newJob)).catch((error) => {
-      console.error('Failed to save job to IndexedDB:', error);
+      console.error("Failed to save job to IndexedDB:", error);
     });
-    
+
     return id;
   },
 
@@ -112,15 +118,15 @@ export const useJobStore = create<JobStore>((set, get) => ({
   updateJob: (id, updates) => {
     set((state) => ({
       jobs: state.jobs.map((job) =>
-        job.id === id ? { ...job, ...updates } : job
+        job.id === id ? { ...job, ...updates } : job,
       ),
     }));
-    
+
     // Update in IndexedDB
-    const updatedJob = get().jobs.find(j => j.id === id);
+    const updatedJob = get().jobs.find((j) => j.id === id);
     if (updatedJob) {
       saveJobToDB(jobToStoredJob(updatedJob)).catch((error) => {
-        console.error('Failed to update job in IndexedDB:', error);
+        console.error("Failed to update job in IndexedDB:", error);
       });
     }
   },
@@ -129,41 +135,62 @@ export const useJobStore = create<JobStore>((set, get) => ({
   updateJobByJobId: (jobId, updates) => {
     set((state) => ({
       jobs: state.jobs.map((job) =>
-        job.jobId === jobId ? { ...job, ...updates } : job
+        job.jobId === jobId ? { ...job, ...updates } : job,
       ),
     }));
-    
+
     // Update in IndexedDB
-    const updatedJob = get().jobs.find(j => j.jobId === jobId);
+    const updatedJob = get().jobs.find((j) => j.jobId === jobId);
     if (updatedJob) {
       saveJobToDB(jobToStoredJob(updatedJob)).catch((error) => {
-        console.error('Failed to update job in IndexedDB:', error);
+        console.error("Failed to update job in IndexedDB:", error);
       });
     }
   },
 
   // Toggle job saved status
   toggleJobSaved: async (id) => {
-    const job = get().jobs.find(j => j.id === id);
+    const job = get().jobs.find((j) => j.id === id);
     if (!job) return;
-    
+
     const newSavedStatus = !job.saved;
-    
+
     // Update store
     set((state) => ({
       jobs: state.jobs.map((j) =>
-        j.id === id ? { ...j, saved: newSavedStatus } : j
+        j.id === id ? { ...j, saved: newSavedStatus } : j,
       ),
     }));
-    
+
     // Update in IndexedDB
-    const updatedJob = get().jobs.find(j => j.id === id);
+    const updatedJob = get().jobs.find((j) => j.id === id);
     if (updatedJob) {
       try {
         await saveJobToDB(jobToStoredJob(updatedJob));
-        console.log('Job saved status updated:', id, newSavedStatus);
+        console.log("Job saved status updated:", id, newSavedStatus);
       } catch (error) {
-        console.error('Failed to update saved status in IndexedDB:', error);
+        console.error("Failed to update saved status in IndexedDB:", error);
+      }
+    }
+  },
+
+  // Dismiss job from notifications
+  dismissJob: async (id) => {
+    // Update store
+    set((state) => ({
+      jobs: state.jobs.map((j) =>
+        j.id === id ? { ...j, dismissed: true } : j,
+      ),
+    }));
+
+    // Update in IndexedDB
+    const updatedJob = get().jobs.find((j) => j.id === id);
+    if (updatedJob) {
+      try {
+        await saveJobToDB(jobToStoredJob(updatedJob));
+        console.log("Job dismissed from notifications:", id);
+      } catch (error) {
+        console.error("Failed to update dismissed status in IndexedDB:", error);
       }
     }
   },
@@ -173,29 +200,31 @@ export const useJobStore = create<JobStore>((set, get) => ({
     set((state) => ({
       jobs: state.jobs.filter((job) => job.id !== id),
     }));
-    
+
     // Remove from IndexedDB
     deleteJobFromDB(id).catch((error) => {
-      console.error('Failed to delete job from IndexedDB:', error);
+      console.error("Failed to delete job from IndexedDB:", error);
     });
   },
 
   // Clear all completed/failed jobs
   clearCompletedJobs: () => {
-    const completedIds = get().jobs
-      .filter(job => job.status === 'completed' || job.status === 'failed')
-      .map(job => job.id);
-    
+    const completedIds = get()
+      .jobs.filter(
+        (job) => job.status === "completed" || job.status === "failed",
+      )
+      .map((job) => job.id);
+
     set((state) => ({
       jobs: state.jobs.filter(
-        (job) => job.status !== 'completed' && job.status !== 'failed'
+        (job) => job.status !== "completed" && job.status !== "failed",
       ),
     }));
-    
+
     // Remove from IndexedDB
-    completedIds.forEach(id => {
+    completedIds.forEach((id) => {
       deleteJobFromDB(id).catch((error) => {
-        console.error('Failed to delete job from IndexedDB:', error);
+        console.error("Failed to delete job from IndexedDB:", error);
       });
     });
   },
@@ -209,14 +238,14 @@ export const useJobStore = create<JobStore>((set, get) => ({
   // Get active jobs (pending or processing)
   getActiveJobs: () => {
     return get().jobs.filter(
-      (job) => job.status === 'pending' || job.status === 'processing'
+      (job) => job.status === "pending" || job.status === "processing",
     );
   },
 
   // Get completed jobs
   getCompletedJobs: () => {
     return get().jobs.filter(
-      (job) => job.status === 'completed' || job.status === 'failed'
+      (job) => job.status === "completed" || job.status === "failed",
     );
   },
 

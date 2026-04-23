@@ -12,7 +12,7 @@ import {
 import { useJobStore } from "@/store/jobStore";
 import { Button } from "@/components/ui/button";
 import { formatDistanceToNow } from "date-fns";
-import { JobDetailModal } from "./JobDetailModal";
+// import { JobDetailModal } from "./JobDetailModal";
 import type { Job } from "@/types";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 
@@ -27,10 +27,13 @@ export function NotificationPanel({
   onClose,
   onOpenJob,
 }: NotificationPanelProps) {
-  //   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
-  const jobs = useJobStore((state) => state.jobs);
+  const allJobs = useJobStore((state) => state.jobs);
   const removeJob = useJobStore((state) => state.removeJob);
+  const dismissJob = useJobStore((state) => state.dismissJob);
   const panelRef = useRef<HTMLDivElement>(null);
+
+  // Filter out dismissed jobs - only show non-dismissed
+  const jobs = allJobs.filter((job) => !job.dismissed);
 
   // Sort jobs: active first, then by created date (newest first)
   const sortedJobs = [...jobs].sort((a, b) => {
@@ -156,7 +159,7 @@ export function NotificationPanel({
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1 flex-shrink-0">
+                  <div className="flex items-center gap-1 shrink-0">
                     {/* Open button - only for completed jobs */}
                     {job.status === "completed" && (
                       <Tooltip>
@@ -187,13 +190,21 @@ export function NotificationPanel({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer"
-                            onClick={() => removeJob(job.id)}
+                            onClick={async () => {
+                              if (job.saved) {
+                                // If saved: just dismiss from notifications (keep in saved list)
+                                await dismissJob(job.id);
+                              } else {
+                                // If unsaved: delete completely from IndexedDB
+                                removeJob(job.id);
+                              }
+                            }}
                           >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Remove transcription</p>
+                          <p>Remove from notifications</p>
                         </TooltipContent>
                       </Tooltip>
                     )}

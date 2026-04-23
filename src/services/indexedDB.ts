@@ -159,6 +159,18 @@ export async function deleteUnsavedJobs(): Promise<void> {
 }
 
 /**
+ * Mark all jobs as dismissed (called on logout)
+ */
+export async function dismissAllJobs(): Promise<void> {
+  const allJobs = await getAllJobsFromDB();
+
+  for (const job of allJobs) {
+    job.dismissed = true;
+    await saveJobToDB(job);
+  }
+}
+
+/**
  * Update job status
  */
 export async function updateJobInDB(

@@ -55,7 +55,7 @@ export function STTPage() {
   const [wavesurferInstance, setWavesurferInstance] = useState<any>(null);
   const [isLoadingSRT, setIsLoadingSRT] = useState(false);
   const [highlightingEnabled, setHighlightingEnabled] = useState(false);
-  const [hasEditedText, setHasEditedText] = useState(false);
+  // const [hasEditedText, setHasEditedText] = useState(false);
   const [settingsChanged, setSettingsChanged] = useState(false);
   const [lastSubmittedSettings, setLastSubmittedSettings] = useState({
     language: "",
@@ -95,14 +95,13 @@ export function STTPage() {
     setCurrentJobId(null);
     setTranscriptionResult("");
     setSrtText(null);
-    setHasEditedText(false);
     // setHighlightingEnabled(true);
   };
 
   const handleEditStart = () => {
     setEditedText(transcriptionResult);
     setIsEditing(true);
-    if (srtText && !hasEditedText) {
+    if (srtText && !currentJob?.output?.textWasEdited) {
       toast.warning("Editing the text will remove word-level highlighting");
     }
   };
@@ -110,8 +109,26 @@ export function STTPage() {
   const handleEditSave = () => {
     setTranscriptionResult(editedText);
     setIsEditing(false);
-    setHasEditedText(true); // Mark as edited
-    setSrtText(null); // Disable highlighting
+    setSrtText(null);
+
+    // Update the job in store and IndexedDB
+    if (currentJobId) {
+      // Get the latest job data from store
+      const latestJob = useJobStore.getState().getJobByJobId(currentJobId);
+
+      // Remove srtText completely using destructuring
+      const { srtText, ...restOutput } = latestJob?.output || {};
+
+      updateJobByJobId(currentJobId, {
+        output: {
+          ...restOutput, // All output except srtText
+          transcribedText: editedText, // Updated text
+          textWasEdited: true, // ← NEW: Mark as edited!
+          // srtText is NOT included - completely removed!
+        },
+      });
+    }
+
     toast.success("Transcription updated!");
   };
 
@@ -196,7 +213,7 @@ export function STTPage() {
     }
     setTranscriptionResult("");
     setSrtText(null);
-    setHasEditedText(false);
+    // setHasEditedText(false);
     // setHighlightingEnabled(true);
     setSettingsChanged(false);
     setIsSubmitting(true);
@@ -483,7 +500,7 @@ export function STTPage() {
                   {/* Add Highlighting Toggle - Only show if SRT available and model supports it */}
                   {srtText &&
                     selectedModel === "mms-1b-all" &&
-                    !hasEditedText && (
+                    !currentJob?.output?.textWasEdited && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -533,9 +550,7 @@ export function STTPage() {
                                 <span className="text-muted-foreground">
                                   Job ID:
                                 </span>
-                                <span>
-                                  {currentJobId}
-                                </span>
+                                <span>{currentJobId}</span>
                               </div>
                               <div className="flex justify-between">
                                 <span className="text-muted-foreground">
@@ -600,7 +615,7 @@ export function STTPage() {
                   }`}
                   autoFocus
                 />
-              ) : isLoadingSRT && !hasEditedText ? (
+              ) : isLoadingSRT && !currentJob?.output?.textWasEdited ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
                   <span className="text-sm text-muted-foreground">
@@ -610,7 +625,7 @@ export function STTPage() {
               ) : highlightingEnabled &&
                 srtText &&
                 wavesurferInstance &&
-                !hasEditedText ? (
+                !currentJob?.output?.textWasEdited ? (
                 <HighlightedTranscription
                   srtText={srtText}
                   wavesurfer={wavesurferInstance}
@@ -707,19 +722,17 @@ export function STTPage() {
   useEffect(() => {
     if (currentJobId && !currentJob) {
       // Job was deleted from store
-      console.log("Current job deleted, resetting to initial state");
-      
+
       setSelectedFile(null);
       setShowOutput(false);
       setCurrentJobId(null);
       setTranscriptionResult("");
       setSrtText(null);
-      setHasEditedText(false);
       setSettingsChanged(false);
     }
   }, [currentJob, currentJobId]);
 
-  // Settings Change Detector 
+  // Settings Change Detector
 
   useEffect(() => {
     if (!showOutput) return; // Only check after output exists

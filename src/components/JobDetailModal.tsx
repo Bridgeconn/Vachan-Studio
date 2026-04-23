@@ -161,15 +161,21 @@ export function JobDetailModal({ job, isOpen, onClose }: JobDetailModalProps) {
     };
   }, [isOpen, currentJobData?.input.audioBlob]);
 
-  // Update state when job changes
+  // Update state when job changes - force update on any output change
   useEffect(() => {
     if (currentJobData) {
-      setTranscriptionText(currentJobData.output?.transcribedText || "");
-      setSrtText(currentJobData.output?.srtText || null);
+      const newText = currentJobData.output?.transcribedText || "";
+      const newSrtText = currentJobData.output?.srtText;
+      setTranscriptionText(newText);
+      setSrtText(newSrtText || null);
       setIsEditing(false);
       setEditedText("");
+      // If srtText is undefined/null, also disable highlighting
+      if (!newSrtText) {
+        setHighlightingEnabled(false);
+      }
     }
-  }, [currentJobData]);
+  }, [currentJobData?.id, currentJobData?.output]);
 
   if (!job) return null;
 
@@ -185,17 +191,26 @@ export function JobDetailModal({ job, isOpen, onClose }: JobDetailModalProps) {
   const handleEditSave = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    if (!currentJobData) return; // Add null check
+    if (!currentJobData) return;
 
     setTranscriptionText(editedText);
     setIsEditing(false);
     setSrtText(null);
 
+    // Get the latest job data from store
+    const latestJob = useJobStore
+      .getState()
+      .getJobByJobId(currentJobData.jobId);
+
+    // Remove srtText completely using destructuring
+    const { srtText, ...restOutput } = latestJob?.output || {};
+
     updateJobByJobId(currentJobData.jobId, {
       output: {
-        ...currentJobData.output,
-        transcribedText: editedText,
-        srtText: undefined,
+        ...restOutput, // All output except srtText
+        transcribedText: editedText, // Updated text
+        textWasEdited: true, // ← NEW: Mark as edited!
+        // srtText is NOT included - completely removed!
       },
     });
 
@@ -454,7 +469,7 @@ export function JobDetailModal({ job, isOpen, onClose }: JobDetailModalProps) {
                     </Tooltip>
 
                     {/* Highlighting Toggle */}
-                    {srtText && supportsHighlighting && (
+                    {srtText && supportsHighlighting && !currentJobData?.output?.textWasEdited && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -503,9 +518,7 @@ export function JobDetailModal({ job, isOpen, onClose }: JobDetailModalProps) {
                                   <span className="text-muted-foreground">
                                     Job ID:
                                   </span>
-                                  <span>
-                                    {currentJobData?.jobId}
-                                  </span>
+                                  <span>{currentJobData?.jobId}</span>
                                 </div>
                                 <div className="flex justify-between">
                                   <span className="text-muted-foreground">
