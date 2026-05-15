@@ -1,6 +1,6 @@
-export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export type JobStatus = "pending" | "processing" | "completed" | "failed";
 
-export type FeatureType = 'stt' | 'tts' | 'ttt' | 'sts';
+export type FeatureType = "stt" | "tts" | "ttt" | "sts";
 
 // Our internal job representation
 export interface Job {
@@ -8,21 +8,38 @@ export interface Job {
   jobId: number;
   type: FeatureType;
   status: JobStatus;
+  saved: boolean;
+  dismissed: boolean;
   createdAt: number;
   completedAt?: number;
   input: {
     fileName?: string;
     fileSize?: number;
-    params?: Record<string, any>;
+    audioBlob?: Blob;
+    params?: {
+      language?: string;
+      model?: string;
+      device?: string;
+      timestamp?: boolean;
+      format?: string;
+      texts?: string[];
+
+    };
   };
   output?: {
     transcribedText?: string;
+    srtText?: string;
+    textWasEdited?: boolean;
     audioUrl?: string;
+    audioReady?: boolean;
+    audioBlobs?: Blob[];
     translatedText?: string;
     data?: any;
   };
   error?: string;
 }
+
+export type StoredJob = Job;
 
 // API Response Types
 
@@ -62,5 +79,5 @@ export interface JobStatusResponse {
 
 export interface SSENotification {
   job_id: number;
-  status: 'started' | 'processing' | 'completed' | 'failed';
+  status: "started" | "processing" | "completed" | "failed";
 }

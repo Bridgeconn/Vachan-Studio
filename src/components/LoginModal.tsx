@@ -104,7 +104,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               <button
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
                 tabIndex={-1}
               >
                 {showPassword ? (
@@ -120,7 +120,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               <button
                 type="button"
                 onClick={handleForgotPassword}
-                className="text-sm text-primary hover:underline"
+                className="text-sm text-primary hover:underline cursor-pointer"
               >
                 Forgot password?
               </button>
@@ -135,7 +135,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
           )}
 
           {/* Submit Button */}
-          <Button type="submit" className="w-full h-11" disabled={loading}>
+          <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
             {loading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -152,7 +152,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             <button
               type="button"
               onClick={handleSignUp}
-              className="text-primary hover:underline font-medium"
+              className="text-primary hover:underline font-medium cursor-pointer"
             >
               Sign Up
             </button>
