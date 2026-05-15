@@ -20,6 +20,7 @@ interface TextInputProps {
   isSubmitted: boolean;
   hasResult: boolean;
   onContentChanged?: () => void;
+  activeSegmentIndex?: number | null;
 }
 
 export function TextInput({
@@ -28,6 +29,7 @@ export function TextInput({
   isSubmitted,
   hasResult,
   onContentChanged,
+  activeSegmentIndex,
 }: TextInputProps) {
   const [pendingDelete, setPendingDelete] = useState<number | null>(null);
   const textareaRefs = useRef<(HTMLTextAreaElement | null)[]>([]);
@@ -90,11 +92,15 @@ export function TextInput({
               ? "border-red-400 ring-1 ring-red-400 bg-red-50 dark:bg-red-950/20"
               : isOverLimit
                 ? "border-destructive ring-1 ring-destructive"
-                : "border-input"
+                : activeSegmentIndex === index
+                  ? "border-blue-300 ring-1 ring-blue-300"
+                  : "border-input"
           }`}
         >
           <textarea
-            ref={(el) => { textareaRefs.current[index] = el; }}
+            ref={(el) => {
+              textareaRefs.current[index] = el;
+            }}
             value={text}
             onChange={(e) => handleChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
@@ -126,7 +132,9 @@ export function TextInput({
       <div className="flex items-center justify-between">
         <span
           className={`text-xs ${
-            isOverLimit ? "text-destructive font-medium" : "text-muted-foreground"
+            isOverLimit
+              ? "text-destructive font-medium"
+              : "text-muted-foreground"
           }`}
         >
           {totalWords} / {MAX_WORDS} words

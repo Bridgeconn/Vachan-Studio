@@ -22,6 +22,8 @@ export interface Job {
       device?: string;
       timestamp?: boolean;
       format?: string;
+      texts?: string[];
+
     };
   };
   output?: {

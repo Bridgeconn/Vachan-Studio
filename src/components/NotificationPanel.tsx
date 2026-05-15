@@ -106,7 +106,7 @@ export function NotificationPanel({
     >
       {/* Header */}
       <div className="p-4 border-b flex items-center justify-between">
-        <h3 className="font-semibold">Transcriptions</h3>
+        <h3 className="font-semibold">Recent History</h3>
         <Button
           variant="ghost"
           size="lg"
@@ -122,7 +122,7 @@ export function NotificationPanel({
         {sortedJobs.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
             <FileText className="h-12 w-12 mx-auto mb-2 opacity-50" />
-            <p className="text-sm">No transcriptions yet</p>
+            <p className="text-sm">No jobs yet</p>
           </div>
         ) : (
           <div className="divide-y">
@@ -135,7 +135,7 @@ export function NotificationPanel({
                   {/* Icon */}
                   <div className="w-8 h-8 rounded bg-primary/10 flex items-center justify-center flex-shrink-0 mt-1">
                     <span className="text-xs font-semibold text-primary">
-                      STT
+                      {job.type.toUpperCase()}
                     </span>
                   </div>
 
@@ -160,6 +160,33 @@ export function NotificationPanel({
 
                   {/* Actions */}
                   <div className="flex items-center gap-1 shrink-0">
+                    {/* Cancel button - only for active jobs */}
+                    {(job.status === "pending" ||
+                      job.status === "processing") && (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-destructive hover:text-destructive cursor-pointer"
+                            onClick={() => {
+                              const updateJobByJobId =
+                                useJobStore.getState().updateJobByJobId;
+                              updateJobByJobId(job.jobId, {
+                                status: "failed",
+                                completedAt: Date.now(),
+                                error: "Cancelled by user",
+                              });
+                            }}
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Cancel job</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    )}
                     {/* Open button - only for completed jobs */}
                     {job.status === "completed" && (
                       <Tooltip>
@@ -183,7 +210,8 @@ export function NotificationPanel({
                     )}
 
                     {/* Remove button */}
-                    {job.status === "completed" && (
+                    {(job.status === "completed" ||
+                      job.status === "failed") && (
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button

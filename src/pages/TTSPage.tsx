@@ -20,11 +20,17 @@ import {
   ChevronRight,
   Play,
   Pause,
+  Check,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { countSavedJobs } from "@/services/indexedDB";
 import WaveSurfer from "wavesurfer.js";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface AudioFile {
   name: string;
@@ -43,7 +49,11 @@ export function TTSPage() {
   const [autoPlay, setAutoPlay] = useState(true);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [viewMode, setViewMode] = useState<"horizontal" | "vertical">("horizontal");
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveFileName, setSaveFileName] = useState("");
+  const [viewMode, setViewMode] = useState<"horizontal" | "vertical">(
+    "horizontal",
+  );
   const [settingsChanged, setSettingsChanged] = useState(false);
   const [contentChanged, setContentChanged] = useState(false);
   const [lastSubmittedSettings, setLastSubmittedSettings] = useState({
@@ -64,6 +74,7 @@ export function TTSPage() {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const autoPlayRef = useRef(autoPlay);
+  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
 
   // Keep autoPlayRef in sync
   useEffect(() => {
@@ -100,7 +111,10 @@ export function TTSPage() {
       barGap: 2,
     });
 
-    ws.on("play", () => setIsPlaying(true));
+    ws.on("play", () => {
+      setIsPlaying(true);
+      setHasStartedPlaying(true);
+    });
     ws.on("pause", () => setIsPlaying(false));
     ws.on("finish", () => {
       setIsPlaying(false);
@@ -172,6 +186,7 @@ export function TTSPage() {
         output: {
           ...currentJob?.output,
           audioReady: true,
+          audioBlobs: audioWithUrls.map((f) => f.blob),
         },
       });
     } catch (error) {
@@ -235,6 +250,7 @@ export function TTSPage() {
             language: selectedLanguage,
             model: selectedModel,
             device,
+            texts: filledTexts,
           },
         },
       });
@@ -251,6 +267,7 @@ export function TTSPage() {
       toast.error(parts[parts.length - 1] ?? "Failed to submit TTS job");
     } finally {
       setIsSubmitting(false);
+      setHasStartedPlaying(false);
     }
   };
 
@@ -270,6 +287,9 @@ export function TTSPage() {
     setSettingsChanged(false);
     setContentChanged(false);
     setIsLoadingAudio(false);
+    setHasStartedPlaying(false);
+    setIsSaving(false);
+    setSaveFileName("");
   };
 
   const handleContentChanged = () => {
@@ -279,40 +299,89 @@ export function TTSPage() {
     }
   };
 
-  const handleToggleSave = async () => {
+  const handleSaveClick = () => {
+    if (!currentJob) return;
+    if (currentJob.saved) {
+      // Unsave directly, no filename needed
+      handleUnsave();
+      return;
+    }
+    // Show inline input with prefilled name
+    setSaveFileName(currentJob.input.fileName || `tts_${currentJob.jobId}`);
+    setIsSaving(true);
+  };
+
+  const handleUnsave = async () => {
+    if (!currentJob) return;
+    const toggleJobSavedStore = useJobStore.getState().toggleJobSaved;
+    await toggleJobSavedStore(currentJob.id);
+    toast.success("File unsaved");
+  };
+
+  const handleSaveConfirm = async () => {
     if (!currentJob) return;
 
-    const wasSaved = currentJob.saved;
-
-    if (!wasSaved) {
-      const savedCount = await countSavedJobs();
-      if (savedCount >= 10) {
-        toast.error("Maximum 10 saved files allowed. Please remove a file first.");
-        return;
-      }
-
-      if (audioFiles.length > 0) {
-        updateJobByJobId(currentJob.jobId, {
-          output: {
-            ...currentJob.output,
-            audioBlobs: audioFiles.map((f) => f.blob),
-          },
-        });
-      }
+    const savedCount = await countSavedJobs();
+    if (savedCount >= 10) {
+      toast.error(
+        "Maximum 10 saved files allowed. Please remove a file first.",
+      );
+      setIsSaving(false);
+      return;
     }
+
+    // Update filename and save blobs
+    const updateJob = useJobStore.getState().updateJob;
+    updateJob(currentJob.id, {
+      input: {
+        ...currentJob.input,
+        fileName: saveFileName.trim() || `tts_${currentJob.jobId}`,
+      },
+      output: {
+        ...currentJob.output,
+        audioBlobs: audioFiles.map((f) => f.blob),
+      },
+    });
 
     const toggleJobSavedStore = useJobStore.getState().toggleJobSaved;
     await toggleJobSavedStore(currentJob.id);
-    toast.success(wasSaved ? "File unsaved" : "File saved!");
+    setIsSaving(false);
+    toast.success("File saved!");
   };
 
-  const handleDownload = () => {
+  const handleSaveCancel = () => {
+    setIsSaving(false);
+    setSaveFileName("");
+  };
+
+  const handleDownload = async () => {
     if (audioFiles.length === 0) return;
-    const file = audioFiles[currentAudioIndex];
+
+    if (audioFiles.length === 1) {
+      // Single file — direct download
+      const file = audioFiles[0];
+      const a = document.createElement("a");
+      a.href = file.url;
+      a.download = file.name;
+      a.click();
+      return;
+    }
+
+    // Multiple files — zip them
+    const JSZip = (await import("jszip")).default;
+    const zip = new JSZip();
+
+    audioFiles.forEach((file) => {
+      zip.file(file.name, file.blob);
+    });
+
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    const url = URL.createObjectURL(zipBlob);
     const a = document.createElement("a");
-    a.href = file.url;
-    a.download = file.name;
+    a.href = url;
+    a.download = `tts_${currentJobId}_audio.zip`;
     a.click();
+    URL.revokeObjectURL(url);
   };
 
   const isOverLimit =
@@ -395,6 +464,7 @@ export function TTSPage() {
         isSubmitted={hasSubmitted && showOutput && audioFiles.length === 0}
         hasResult={audioFiles.length > 0}
         onContentChanged={handleContentChanged}
+        activeSegmentIndex={hasStartedPlaying ? currentAudioIndex : null}
       />
 
       {(!hasSubmitted || settingsChanged || contentChanged) && (
@@ -429,39 +499,90 @@ export function TTSPage() {
 
           {audioFiles.length > 0 && (
             <div className="flex items-center gap-1">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-pointer"
-                    onClick={handleDownload}
-                  >
-                    <Download className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent><p>Download audio</p></TooltipContent>
-              </Tooltip>
+              {isSaving ? (
+                /* Inline filename input */
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    value={saveFileName}
+                    onChange={(e) => setSaveFileName(e.target.value)}
+                    className="h-8 text-sm border rounded px-2 w-40 focus:outline-none focus:ring-1 focus:ring-ring"
+                    autoFocus
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleSaveConfirm();
+                      if (e.key === "Escape") handleSaveCancel();
+                    }}
+                  />
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer text-green-600 hover:text-green-700"
+                        onClick={handleSaveConfirm}
+                      >
+                        <Check className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Confirm save</p>
+                    </TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer text-red-600 hover:text-red-700"
+                        onClick={handleSaveCancel}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cancel</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              ) : (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer"
+                        onClick={handleDownload}
+                      >
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download audio</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 cursor-pointer"
-                    onClick={handleToggleSave}
-                  >
-                    {currentJob?.saved ? (
-                      <SaveOff className="h-4 w-4" />
-                    ) : (
-                      <Save className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{currentJob?.saved ? "Unsave" : "Save"}</p>
-                </TooltipContent>
-              </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 cursor-pointer"
+                        onClick={handleSaveClick}
+                      >
+                        {currentJob?.saved ? (
+                          <SaveOff className="h-4 w-4" />
+                        ) : (
+                          <Save className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{currentJob?.saved ? "Unsave" : "Save"}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -493,7 +614,10 @@ export function TTSPage() {
                     onChange={(e) => setAutoPlay(e.target.checked)}
                     className="w-4 h-4 cursor-pointer"
                   />
-                  <label htmlFor="autoplay" className="text-xs text-muted-foreground cursor-pointer">
+                  <label
+                    htmlFor="autoplay"
+                    className="text-xs text-muted-foreground cursor-pointer"
+                  >
                     Auto-play next
                   </label>
                 </div>
@@ -509,7 +633,11 @@ export function TTSPage() {
                   className="h-9 w-9 cursor-pointer shrink-0"
                   onClick={() => wavesurferRef.current?.playPause()}
                 >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+                  {isPlaying ? (
+                    <Pause className="h-4 w-4" />
+                  ) : (
+                    <Play className="h-4 w-4" />
+                  )}
                 </Button>
 
                 {audioFiles.length > 1 && (
@@ -518,7 +646,9 @@ export function TTSPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 cursor-pointer"
-                      onClick={() => setCurrentAudioIndex((p) => Math.max(0, p - 1))}
+                      onClick={() =>
+                        setCurrentAudioIndex((p) => Math.max(0, p - 1))
+                      }
                       disabled={currentAudioIndex === 0}
                     >
                       <ChevronLeft className="h-4 w-4" />
@@ -530,7 +660,11 @@ export function TTSPage() {
                       variant="ghost"
                       size="icon"
                       className="h-8 w-8 cursor-pointer"
-                      onClick={() => setCurrentAudioIndex((p) => Math.min(audioFiles.length - 1, p + 1))}
+                      onClick={() =>
+                        setCurrentAudioIndex((p) =>
+                          Math.min(audioFiles.length - 1, p + 1),
+                        )
+                      }
                       disabled={currentAudioIndex === audioFiles.length - 1}
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -547,7 +681,9 @@ export function TTSPage() {
         ) : isLoadingAudio ? (
           <div className="flex items-center justify-center h-full">
             <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
-            <span className="text-sm text-muted-foreground">Loading audio...</span>
+            <span className="text-sm text-muted-foreground">
+              Loading audio...
+            </span>
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center h-full space-y-4">
@@ -555,7 +691,8 @@ export function TTSPage() {
             <div className="text-center">
               <p className="text-sm font-medium">Generating speech...</p>
               <p className="text-xs text-muted-foreground mt-1">
-                This may take a few moments. You can switch to other features while waiting.
+                This may take a few moments. You can switch to other features
+                while waiting.
               </p>
             </div>
             <div className="text-xs text-muted-foreground space-y-1">
@@ -578,6 +715,7 @@ export function TTSPage() {
                 setCurrentJobId(null);
                 setSettingsChanged(false);
                 setContentChanged(false);
+                setHasSubmitted(false);
                 toast.info("Generation cancelled");
               }}
               className="mt-4 min-w-50 text-red-600 hover:text-red-700 border-red-600 hover:border-red-700 cursor-pointer"

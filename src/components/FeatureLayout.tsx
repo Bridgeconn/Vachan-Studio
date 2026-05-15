@@ -15,7 +15,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { useJobStore } from "@/store/jobStore";
-import { STTJobDetailModal } from "./STTJobDetailModal";
+import { JobDetailModal } from "./JobDetailModal";
 import { deleteJobFromDB } from "@/services/indexedDB";
 import { toast } from "sonner";
 import type { Job } from "@/types";
@@ -144,7 +144,7 @@ export function FeatureLayout({
                   <p>
                     {isNewDisabled
                       ? "Max 3 concurrent jobs running"
-                      : "Start a new transcription"}
+                      : `Start a new ${featureName.toLowerCase()}`}
                   </p>
                 </TooltipContent>
               </Tooltip>
@@ -301,7 +301,7 @@ export function FeatureLayout({
 
       {/* Job Detail Modal */}
       {selectedJob && (
-        <STTJobDetailModal
+        <JobDetailModal
           job={selectedJob}
           isOpen={!!selectedJob}
           onClose={() => setSelectedJob(null)}
