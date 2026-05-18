@@ -117,6 +117,46 @@ class AIEngineService {
     return data.data.jobId;
   }
 
+  async submitTTTJob(
+    texts: string[],
+    token: string,
+    params: {
+      model_name: string;
+      source_language: string;
+      target_language: string;
+      device?: string;
+    },
+  ): Promise<number> {
+    const url = new URL(`${API_BASE_URL}/model/text/translate`);
+
+    url.searchParams.append("model_name", params.model_name);
+    url.searchParams.append("source_language", params.source_language);
+    url.searchParams.append("target_language", params.target_language);
+    if (params.device) url.searchParams.append("device", params.device);
+
+    console.log("Submitting TTT job to:", url.toString());
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(texts),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("TTT submission failed:", response.status, errorText);
+      throw new Error(`${errorText}`);
+    }
+
+    const data: SubmitJobResponse = await response.json();
+    console.log("TTT job submitted successfully:", data);
+
+    return data.data.jobId;
+  }
+
   /**
    * Get job status and result
    */

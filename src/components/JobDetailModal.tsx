@@ -3,6 +3,7 @@
 import type { Job } from "@/types";
 import { STTJobDetailModal } from "./STTJobDetailModal";
 import { TTSJobDetailModal } from "./TTSJobDetailModal";
+import { TTTJobDetailModal } from "./TTTJobDetailModal";
 
 interface JobDetailModalProps {
   job: Job | null;
@@ -15,6 +16,10 @@ export function JobDetailModal({ job, isOpen, onClose }: JobDetailModalProps) {
 
   if (job.type === "tts") {
     return <TTSJobDetailModal job={job} isOpen={isOpen} onClose={onClose} />;
+  }
+
+  if (job.type === "ttt") {
+    return <TTTJobDetailModal job={job} isOpen={isOpen} onClose={onClose} />;
   }
 
   return <STTJobDetailModal job={job} isOpen={isOpen} onClose={onClose} />;
