@@ -1,6 +1,7 @@
 export const APP_NAME = 'AI UI v2';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+export const API_BASE_URL_AUTH = import.meta.env.VITE_API_BASE_URL_AUTH;
 
 // SSE settings
 export const SSE_ENDPOINT = `${API_BASE_URL}/model/events`;
