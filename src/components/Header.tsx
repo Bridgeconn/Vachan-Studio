@@ -8,6 +8,7 @@ import { NotificationPanel } from "./NotificationPanel";
 import { useJobStore } from "@/store/jobStore";
 import { JobDetailModal } from "./JobDetailModal";
 import type { Job } from "@/types";
+import { AboutModal } from "./AboutModal";
 
 interface HeaderProps {
   isLoggedIn: boolean;
@@ -27,6 +28,7 @@ export function Header({
   const [isDark, setIsDark] = useState(false);
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
 
   // Get active jobs count for badge
   const activeJobsCount = useJobStore(
@@ -61,7 +63,12 @@ export function Header({
         {/* Right: Actions */}
         <div className="flex items-center gap-3">
           {/* About */}
-          <Button className="cursor-pointer" variant="ghost" size="sm">
+          <Button
+            className="cursor-pointer"
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsAboutOpen(true)}
+          >
             About
           </Button>
 
@@ -145,6 +152,8 @@ export function Header({
           onClose={() => setSelectedJob(null)}
         />
       )}
+      {/* About Modal */}
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </header>
   );
 }

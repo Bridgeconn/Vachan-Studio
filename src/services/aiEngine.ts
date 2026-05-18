@@ -157,6 +157,52 @@ class AIEngineService {
     return data.data.jobId;
   }
 
+  async submitSTSJob(
+    audioFile: File,
+    token: string,
+    params: {
+      model_name: string;
+      target_language: string;
+      output_format: string;
+      device?: string;
+      enhance?: boolean;
+    },
+  ): Promise<number> {
+    const formData = new FormData();
+    formData.append("files", audioFile);
+
+    const url = new URL(`${API_BASE_URL}/model/audio/translate`);
+
+    url.searchParams.append("model_name", params.model_name);
+    url.searchParams.append("target_language", params.target_language);
+    url.searchParams.append("output_format", params.output_format);
+    if (params.device) url.searchParams.append("device", params.device);
+    if (params.enhance !== undefined) {
+      url.searchParams.append("enhance", params.enhance ? "True" : "False");
+    }
+
+    console.log("Submitting STS job to:", url.toString());
+
+    const response = await fetch(url.toString(), {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("STS submission failed:", response.status, errorText);
+      throw new Error(`${errorText}`);
+    }
+
+    const data: SubmitJobResponse = await response.json();
+    console.log("STS job submitted successfully:", data);
+
+    return data.data.jobId;
+  }
+
   /**
    * Get job status and result
    */

@@ -46,9 +46,8 @@ export function useSSESync(token: string | null) {
                   data: result.data.output,
                 },
               });
-            } else if (job.type === "tts") {
-              // TTS audio is fetched separately via assets API
-              // Just mark as completed here
+            } else if (job.type === "tts" || job.type === "sts") {
+              // TTS/STS audio is fetched separately via assets API
               updateJobByJobId(job.jobId, {
                 status: "completed",
                 completedAt: Date.now(),

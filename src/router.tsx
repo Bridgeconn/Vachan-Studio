@@ -6,6 +6,7 @@ import { HomePage } from "./pages/HomePage";
 import { STTPage } from "./pages/STTPage";
 import { TTSPage } from "./pages/TTSPage";
 import { TTTPage } from "./pages/TTTPage";
+import { STSPage } from "./pages/STSPage";
 
 export const router = createBrowserRouter([
   {
@@ -27,6 +28,10 @@ export const router = createBrowserRouter([
       {
         path: "/ttt",
         element: <TTTPage />,
+      },
+      {
+        path: "/sts",
+        element: <STSPage />,
       },
     ],
   },

@@ -1,11 +1,13 @@
 // src/pages/HomePage.tsx
 
+import { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FeatureCard } from '../components/FeatureCard';
-import { 
-  Mic, 
-  Volume2, 
-  Languages, 
+import { ComingSoonModal } from '../components/ComingSoonModal';
+import {
+  Mic,
+  Volume2,
+  Languages,
   Waves,
   Sparkles
 } from 'lucide-react';
@@ -16,6 +18,7 @@ interface OutletContext {
 
 export function HomePage() {
   const { onFeatureClick } = useOutletContext<OutletContext>();
+  const [showComingSoon, setShowComingSoon] = useState(false);
 
   const features = [
     {
@@ -47,17 +50,24 @@ export function HomePage() {
       iconColor: 'bg-indigo-500'
     },
     {
-      id: 'custom',
+      id: 'coming-soon',
       icon: Sparkles,
-      title: 'Custom Voice Generation',
-      description: 'Generate a custom voice for your brand or product using AI.',
+      title: 'More AI Features',
+      description: 'Explore upcoming AI-powered features including voice cloning, noise removal, audio enhancement and more.',
       iconColor: 'bg-amber-500'
     }
   ];
 
+  const handleFeatureClick = (id: string) => {
+    if (id === 'coming-soon') {
+      setShowComingSoon(true);
+    } else {
+      onFeatureClick(id);
+    }
+  };
+
   return (
     <div className="min-h-screen pt-16">
-      {/* Hero Section */}
       <div className="container mx-auto px-6 py-16 text-center">
         <h1 className="text-5xl font-bold mb-4">
           Welcome to AI UI Services
@@ -67,7 +77,6 @@ export function HomePage() {
         </p>
       </div>
 
-      {/* Feature Cards Grid */}
       <div className="container mx-auto px-6 pb-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
           {features.map((feature) => (
@@ -77,11 +86,16 @@ export function HomePage() {
               title={feature.title}
               description={feature.description}
               iconColor={feature.iconColor}
-              onClick={() => onFeatureClick(feature.id)}
+              onClick={() => handleFeatureClick(feature.id)}
             />
           ))}
         </div>
       </div>
+
+      <ComingSoonModal
+        isOpen={showComingSoon}
+        onClose={() => setShowComingSoon(false)}
+      />
     </div>
   );
 }
