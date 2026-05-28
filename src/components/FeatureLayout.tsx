@@ -202,22 +202,31 @@ export function FeatureLayout({
         ) : (
           /* Collapsed Left Panel */
           <div className="p-2 space-y-2 flex flex-col items-center">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setLeftPanelOpen(true)}
-              title="Expand panel"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => navigate("/")}
-              title="Go to homepage"
-            >
-              <Home className="h-5 w-5" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="cursor-pointer"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setLeftPanelOpen(true)}
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Expand panel</p>
+              </TooltipContent>
+            </Tooltip>
+
+                <Button
+                  className="cursor-pointer"
+                  variant="ghost"
+                  size="icon"
+                  title="Go to homepage"
+                  onClick={() => navigate("/")}
+                >
+                  <Home className="h-5 w-5" />
+                </Button>
           </div>
         )}
       </div>
@@ -254,15 +263,21 @@ export function FeatureLayout({
 
           {/* Only show settings icon when panel is closed */}
           {!rightPanelOpen && (
-            <Button
-              className="cursor-pointer"
-              variant="ghost"
-              size="icon"
-              onClick={() => setRightPanelOpen(true)}
-              title="Show settings"
-            >
-              ⚙️
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  className="cursor-pointer"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setRightPanelOpen(true)}
+                >
+                  ⚙️
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Show settings</p>
+              </TooltipContent>
+            </Tooltip>
           )}
         </div>
 
