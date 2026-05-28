@@ -301,6 +301,7 @@ export function AudioInput({
             className="hidden"
           />
           <Button
+            className="cursor-pointer"
             variant="outline"
             onClick={() => fileInputRef.current?.click()}
           >
@@ -309,6 +310,7 @@ export function AudioInput({
           </Button>
 
           <Button
+            className="cursor-pointer"
             variant={isRecording ? "destructive" : "outline"}
             onClick={isRecording ? stopRecording : startRecording}
           >
