@@ -1,6 +1,6 @@
 export type JobStatus = "pending" | "processing" | "completed" | "failed";
 
-export type FeatureType = "stt" | "tts" | "ttt" | "sts";
+export type FeatureType = "stt" | "tts" | "ttt" | "sts" | "vc" | "nr" | "ae";
 
 // Our internal job representation
 export interface Job {
@@ -23,7 +23,7 @@ export interface Job {
       timestamp?: boolean;
       format?: string;
       texts?: string[];
-
+      outputFormat?: string;
     };
   };
   output?: {
@@ -34,6 +34,7 @@ export interface Job {
     audioReady?: boolean;
     audioBlobs?: Blob[];
     translatedText?: string;
+    savedFileName?: string;
     data?: any;
   };
   error?: string;

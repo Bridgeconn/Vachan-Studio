@@ -22,7 +22,7 @@ import type { Job } from "@/types";
 
 interface FeatureLayoutProps {
   featureName: string;
-  featureType: "stt" | "tts" | "ttt" | "sts";
+  featureType: "stt" | "tts" | "ttt" | "sts" | "vc" | "nr" | "ae";
   children: ReactNode;
   settingsContent: ReactNode;
   showNewButton?: boolean;
@@ -183,7 +183,7 @@ export function FeatureLayout({
                         onClick={() => setSelectedJob(job)}
                         className="text-xs p-2 hover:bg-accent rounded cursor-pointer flex items-center justify-between group"
                       >
-                        <span className="truncate">{job.input.fileName}</span>
+                        <span className="truncate">{job.output?.savedFileName || job.input.fileName}</span>
                         <Button
                           variant="ghost"
                           size="icon"

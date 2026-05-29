@@ -1,4 +1,4 @@
-// src/components/TTSJobDetailModal.tsx
+// src/components/AudioToolsJobDetailModal.tsx
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -8,10 +8,8 @@ import {
   Play,
   SaveOff,
   Save,
-  ChevronLeft,
-  ChevronRight,
-  X,
   Check,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,160 +32,157 @@ import { toast } from "sonner";
 import WaveSurfer from "wavesurfer.js";
 import type { Job } from "@/types";
 import { useJobStore } from "@/store/jobStore";
-import { checkDuplicateFileName, countSavedJobs } from "@/services/indexedDB";
+import { countSavedJobs, checkDuplicateFileName } from "@/services/indexedDB";
 
-interface TTSJobDetailModalProps {
+interface AudioToolsJobDetailModalProps {
   job: Job | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
-interface AudioFile {
-  name: string;
-  blob: Blob;
-  url: string;
-}
+const FEATURE_LABELS: Record<string, string> = {
+  vc: "Voice Clone",
+  nr: "Noise Removal",
+  ae: "Audio Enhance",
+};
 
-export function TTSJobDetailModal({
+export function AudioToolsJobDetailModal({
   job,
   isOpen,
   onClose,
-}: TTSJobDetailModalProps) {
+}: AudioToolsJobDetailModalProps) {
   const liveJob = useJobStore((state) =>
     state.jobs.find((j) => j.id === job?.id),
   );
   const currentJobData = liveJob || job;
 
-  const [audioFiles, setAudioFiles] = useState<AudioFile[]>([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [autoPlay, setAutoPlay] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [inputIsPlaying, setInputIsPlaying] = useState(false);
+  const [outputAudioUrl, setOutputAudioUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
   const [saveFileName, setSaveFileName] = useState("");
-  const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
 
-  const waveformRef = useRef<HTMLDivElement>(null);
-  const wavesurferRef = useRef<WaveSurfer | null>(null);
-  const autoPlayRef = useRef(autoPlay);
+  const outputWaveformRef = useRef<HTMLDivElement>(null);
+  const outputWavesurferRef = useRef<WaveSurfer | null>(null);
+  const inputWaveformRef = useRef<HTMLDivElement>(null);
+  const inputWavesurferRef = useRef<WaveSurfer | null>(null);
 
   const toggleJobSavedStore = useJobStore((state) => state.toggleJobSaved);
 
-  useEffect(() => {
-    autoPlayRef.current = autoPlay;
-  }, [autoPlay]);
+  const wavesurferConfig = {
+    waveColor: "rgb(148, 163, 184)",
+    progressColor: "rgb(99, 102, 241)",
+    cursorColor: "rgb(99, 102, 241)",
+    barWidth: 2,
+    barRadius: 3,
+    cursorWidth: 1,
+    height: 60,
+    barGap: 2,
+  };
 
-  // Effect 1 — initialize audio files from blobs
+  // Effect 1 — init output audio blob
   useEffect(() => {
-    if (!isOpen || currentJobData?.type !== "tts") return;
+    if (!isOpen) return;
     const blobs = currentJobData?.output?.audioBlobs;
     if (!blobs || blobs.length === 0) return;
 
-    const files: AudioFile[] = blobs.map((b, i) => ({
-      name: `audio_${i}.wav`,
-      blob: b,
-      url: URL.createObjectURL(b),
-    }));
-    setAudioFiles(files);
-    setCurrentIndex(0);
-    setHasStartedPlaying(false);
+    const url = URL.createObjectURL(blobs[0]);
+    setOutputAudioUrl(url);
+    setIsPlaying(false);
+
+    return () => {
+      URL.revokeObjectURL(url);
+    };
   }, [isOpen, currentJobData?.output?.audioBlobs]);
 
-  // Effect 2 — create WaveSurfer after audioFiles exist in DOM
+  // Effect 2 — create output WaveSurfer
   useEffect(() => {
-    if (!isOpen || audioFiles.length === 0) return;
+    if (!isOpen || !outputAudioUrl) return;
 
     const init = () => {
-      if (!waveformRef.current) {
+      if (!outputWaveformRef.current) {
         setTimeout(init, 100);
         return;
       }
-
-      if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
-        wavesurferRef.current = null;
+      if (outputWavesurferRef.current) {
+        outputWavesurferRef.current.destroy();
+        outputWavesurferRef.current = null;
       }
-
       const ws = WaveSurfer.create({
-        container: waveformRef.current,
-        waveColor: "rgb(148, 163, 184)",
-        progressColor: "rgb(99, 102, 241)",
-        cursorColor: "rgb(99, 102, 241)",
-        barWidth: 2,
-        barRadius: 3,
-        cursorWidth: 1,
-        height: 60,
-        barGap: 2,
+        container: outputWaveformRef.current,
+        ...wavesurferConfig,
       });
-
-      ws.on("play", () => {
-        setIsPlaying(true);
-        setHasStartedPlaying(true);
-      });
+      ws.on("play", () => setIsPlaying(true));
       ws.on("pause", () => setIsPlaying(false));
-      ws.on("finish", () => {
-        setIsPlaying(false);
-        setCurrentIndex((prev) => {
-          if (autoPlayRef.current && prev < audioFiles.length - 1)
-            return prev + 1;
-          return prev;
-        });
-      });
-
-      ws.loadBlob(audioFiles[currentIndex].blob);
-      wavesurferRef.current = ws;
+      ws.on("finish", () => setIsPlaying(false));
+      ws.load(outputAudioUrl);
+      outputWavesurferRef.current = ws;
     };
 
     init();
 
     return () => {
-      if (wavesurferRef.current) {
-        wavesurferRef.current.destroy();
-        wavesurferRef.current = null;
+      if (outputWavesurferRef.current) {
+        outputWavesurferRef.current.destroy();
+        outputWavesurferRef.current = null;
       }
     };
-  }, [isOpen, audioFiles, currentIndex]);
+  }, [isOpen, outputAudioUrl]);
 
+  // Effect 3 — create input WaveSurfer
   useEffect(() => {
-    if (!wavesurferRef.current || audioFiles.length === 0) return;
-    if (autoPlayRef.current && currentIndex > 0) {
-      wavesurferRef.current.once("ready", () => {
-        wavesurferRef.current?.play();
+    if (!isOpen || !currentJobData?.input.audioBlob) return;
+
+    const init = () => {
+      if (!inputWaveformRef.current) {
+        setTimeout(init, 100);
+        return;
+      }
+      if (inputWavesurferRef.current) {
+        inputWavesurferRef.current.destroy();
+        inputWavesurferRef.current = null;
+      }
+      const ws = WaveSurfer.create({
+        container: inputWaveformRef.current,
+        ...wavesurferConfig,
       });
-    }
-  }, [currentIndex]);
-
-  // Cleanup blob URLs on unmount
-  useEffect(() => {
-    return () => {
-      audioFiles.forEach((f) => URL.revokeObjectURL(f.url));
+      ws.on("play", () => setInputIsPlaying(true));
+      ws.on("pause", () => setInputIsPlaying(false));
+      ws.on("finish", () => setInputIsPlaying(false));
+      const url = URL.createObjectURL(currentJobData.input.audioBlob!);
+      ws.load(url);
+      inputWavesurferRef.current = ws;
     };
-  }, [audioFiles]);
 
-  const handleSaveClick = (e: React.MouseEvent) => {
+    init();
+
+    return () => {
+      if (inputWavesurferRef.current) {
+        inputWavesurferRef.current.destroy();
+        inputWavesurferRef.current = null;
+      }
+    };
+  }, [isOpen, currentJobData?.input.audioBlob]);
+
+  const handleSaveClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!currentJobData) return;
     if (currentJobData.saved) {
-      handleUnsave();
+      await toggleJobSavedStore(currentJobData.id);
+      toast.success("File unsaved");
       return;
     }
-
     const nameWithoutExt = (
-      currentJobData.input.fileName || `tts_${currentJobData.jobId}`
+      currentJobData.input.fileName ||
+      `${currentJobData.type}_${currentJobData.jobId}`
     ).replace(/\.[^/.]+$/, "");
     setSaveFileName(nameWithoutExt);
     setIsSaving(true);
   };
 
-  const handleUnsave = async () => {
-    if (!currentJobData) return;
-    await toggleJobSavedStore(currentJobData.id);
-    toast.success("File unsaved");
-  };
-
   const handleSaveConfirm = async () => {
     if (!currentJobData) return;
-
-    const savedCount = await countSavedJobs("tts");
+    const savedCount = await countSavedJobs(currentJobData.type);
     if (savedCount >= 10) {
       toast.error(
         "Maximum 10 saved files allowed. Please remove a file first.",
@@ -195,10 +190,9 @@ export function TTSJobDetailModal({
       setIsSaving(false);
       return;
     }
-
     const isDuplicate = await checkDuplicateFileName(
-      saveFileName.trim() || `tts_${currentJobData.jobId}`,
-      "tts",
+      saveFileName.trim() || `${currentJobData.type}_${currentJobData.jobId}`,
+      currentJobData.type,
       currentJobData.id,
     );
     if (isDuplicate) {
@@ -207,15 +201,14 @@ export function TTSJobDetailModal({
       );
       return;
     }
-
-    const updateJob = useJobStore.getState().updateJob;
-    updateJob(currentJobData.id, {
+    useJobStore.getState().updateJob(currentJobData.id, {
       output: {
         ...currentJobData.output,
-        savedFileName: saveFileName.trim() || `tts_${currentJobData.jobId}`,
+        savedFileName:
+          saveFileName.trim() ||
+          `${currentJobData.type}_${currentJobData.jobId}`,
       },
     });
-
     await toggleJobSavedStore(currentJobData.id);
     setIsSaving(false);
     toast.success("File saved!");
@@ -226,39 +219,24 @@ export function TTSJobDetailModal({
     setSaveFileName("");
   };
 
-  const handleDownload = async () => {
-    if (audioFiles.length === 0) return;
-
+  const handleDownload = () => {
+    if (!outputAudioUrl) return;
     const savedName = (
       currentJobData?.output?.savedFileName ||
       currentJobData?.input.fileName ||
-      `tts_${currentJobData?.jobId}`
+      `${currentJobData?.type}_${currentJobData?.jobId}`
     ).replace(/\.[^/.]+$/, "");
-
-    if (audioFiles.length === 1) {
-      const file = audioFiles[0];
-      const a = document.createElement("a");
-      a.href = file.url;
-      a.download = `${savedName}.wav`;
-      a.click();
-      return;
-    }
-
-    const JSZip = (await import("jszip")).default;
-    const zip = new JSZip();
-    audioFiles.forEach((file) => {
-      zip.file(file.name, file.blob);
-    });
-    const zipBlob = await zip.generateAsync({ type: "blob" });
-    const url = URL.createObjectURL(zipBlob);
     const a = document.createElement("a");
-    a.href = url;
-    a.download = `${savedName}.zip`;
+    a.href = outputAudioUrl;
+    const ext = currentJobData?.input.params?.outputFormat || "wav";
+    a.download = `${savedName}.${ext}`;
     a.click();
-    URL.revokeObjectURL(url);
   };
 
   if (!job) return null;
+
+  const featureLabel =
+    FEATURE_LABELS[currentJobData?.type || ""] || "Audio Tools";
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -269,41 +247,52 @@ export function TTSJobDetailModal({
       >
         <DialogHeader className="p-6 pb-4 border-b">
           <DialogTitle>
-            <h2 className="text-xl font-semibold">Audio Generation</h2>
+            <h2 className="text-xl font-semibold">{featureLabel}</h2>
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-6 mt-6">
-          {/* Input text - readonly */}
-          <div className="border rounded-lg p-4 bg-muted/30 space-y-2">
-            {/* <h3 className="text-sm font-semibold mb-5">Input Text</h3> */}
-            {currentJobData?.input?.params?.texts &&
-            currentJobData.input.params.texts.length > 0 ? (
-              currentJobData.input.params.texts.map((text, i) => (
+          {/* Input audio */}
+          <div className="border rounded-lg p-4 bg-muted/30 space-y-3">
+            <h3 className="text-sm font-semibold">Input Audio</h3>
+            {currentJobData?.input.audioBlob ? (
+              <div className="border rounded-lg p-4 bg-background">
                 <div
-                  key={i}
-                  className={`p-3 rounded-lg border text-sm bg-background transition-colors ${
-                    hasStartedPlaying && i === currentIndex
-                      ? "border-blue-400 ring-1 ring-blue-400"
-                      : "border-input"
-                  }`}
-                >
-                  {text}
+                  ref={inputWaveformRef}
+                  className="w-full overflow-hidden"
+                />
+                <div className="flex items-center gap-3 mt-3">
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9 cursor-pointer shrink-0"
+                    onClick={() => inputWavesurferRef.current?.playPause()}
+                  >
+                    {inputIsPlaying ? (
+                      <Pause className="h-4 w-4" />
+                    ) : (
+                      <Play className="h-4 w-4" />
+                    )}
+                  </Button>
+                  <span className="text-xs text-muted-foreground truncate">
+                    {currentJobData?.input.fileName
+                      ? `${currentJobData.input.fileName.replace(/\.[^/.]+$/, "")}.wav`
+                      : `output.wav`}
+                  </span>
                 </div>
-              ))
+              </div>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No input text available
+                {currentJobData?.input.fileName}
               </p>
             )}
           </div>
 
-          {/* Audio Player */}
-          {audioFiles.length > 0 ? (
+          {/* Output audio */}
+          {outputAudioUrl ? (
             <div className="border rounded-lg p-4 bg-muted/30 space-y-4">
-              {/* Header with actions */}
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold">Audio</h3>
+                <h3 className="text-sm font-semibold">Output Audio</h3>
                 <div className="flex items-center gap-1">
                   {isSaving ? (
                     <div className="flex items-center gap-1">
@@ -351,7 +340,6 @@ export function TTSJobDetailModal({
                     </div>
                   ) : (
                     <>
-                      {/* Download */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -364,11 +352,9 @@ export function TTSJobDetailModal({
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Download audio</p>
+                          <p>Download</p>
                         </TooltipContent>
                       </Tooltip>
-
-                      {/* Save/Unsave */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
@@ -388,8 +374,6 @@ export function TTSJobDetailModal({
                           <p>{currentJobData?.saved ? "Unsave" : "Save"}</p>
                         </TooltipContent>
                       </Tooltip>
-
-                      {/* Info */}
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <HoverCard openDelay={0} closeDelay={0}>
@@ -416,11 +400,9 @@ export function TTSJobDetailModal({
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-muted-foreground">
-                                      Language:
+                                      Feature:
                                     </span>
-                                    <span>
-                                      {currentJobData?.input.params?.language}
-                                    </span>
+                                    <span>{featureLabel}</span>
                                   </div>
                                   <div className="flex justify-between">
                                     <span className="text-muted-foreground">
@@ -449,51 +431,17 @@ export function TTSJobDetailModal({
                 </div>
               </div>
 
-              {/* Segment pills + autoplay */}
-              {audioFiles.length > 1 && (
-                <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    {audioFiles.map((_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setCurrentIndex(i)}
-                        className={`px-3 py-1 rounded-full text-xs transition-colors cursor-pointer ${
-                          i === currentIndex
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted hover:bg-accent"
-                        }`}
-                      >
-                        Segment {i + 1}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="modal-autoplay"
-                      checked={autoPlay}
-                      onChange={(e) => setAutoPlay(e.target.checked)}
-                      className="w-4 h-4 cursor-pointer"
-                    />
-                    <label
-                      htmlFor="modal-autoplay"
-                      className="text-xs text-muted-foreground cursor-pointer"
-                    >
-                      Auto-play next
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Waveform player */}
               <div className="border rounded-lg p-4 bg-background">
-                <div ref={waveformRef} className="w-full" />
+                <div
+                  ref={outputWaveformRef}
+                  className="w-full overflow-hidden"
+                />
                 <div className="flex items-center gap-3 mt-3">
                   <Button
                     variant="outline"
                     size="icon"
                     className="h-9 w-9 cursor-pointer shrink-0"
-                    onClick={() => wavesurferRef.current?.playPause()}
+                    onClick={() => outputWavesurferRef.current?.playPause()}
                   >
                     {isPlaying ? (
                       <Pause className="h-4 w-4" />
@@ -501,51 +449,24 @@ export function TTSJobDetailModal({
                       <Play className="h-4 w-4" />
                     )}
                   </Button>
-
-                  {audioFiles.length > 1 && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 cursor-pointer"
-                        onClick={() =>
-                          setCurrentIndex((p) => Math.max(0, p - 1))
-                        }
-                        disabled={currentIndex === 0}
-                      >
-                        <ChevronLeft className="h-4 w-4" />
-                      </Button>
-                      <span className="text-xs text-muted-foreground">
-                        {currentIndex + 1} / {audioFiles.length}
-                      </span>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 cursor-pointer"
-                        onClick={() =>
-                          setCurrentIndex((p) =>
-                            Math.min(audioFiles.length - 1, p + 1),
-                          )
-                        }
-                        disabled={currentIndex === audioFiles.length - 1}
-                      >
-                        <ChevronRight className="h-4 w-4" />
-                      </Button>
-                    </>
-                  )}
-
                   <span className="text-xs text-muted-foreground truncate">
-                    {currentJobData?.output?.savedFileName ||
-                    currentJobData?.input.fileName
-                      ? `${(currentJobData?.output?.savedFileName || currentJobData?.input.fileName || "").replace(/\.[^/.]+$/, "")}.wav`
-                      : audioFiles[currentIndex]?.name}
+                    {(() => {
+                      const ext =
+                        currentJobData?.input.params?.outputFormat || "wav";
+                      const name =
+                        currentJobData?.output?.savedFileName ||
+                        currentJobData?.input.fileName;
+                      return name
+                        ? `${name.replace(/\.[^/.]+$/, "")}.${ext}`
+                        : `output.${ext}`;
+                    })()}
                   </span>
                 </div>
               </div>
             </div>
           ) : (
             <div className="border rounded-lg p-8 text-center text-sm text-muted-foreground">
-              No audio available
+              No output audio available
             </div>
           )}
         </div>
