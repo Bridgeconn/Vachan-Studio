@@ -225,7 +225,7 @@ export function STTSettings({
               <select
                 value={device}
                 onChange={(e) => onDeviceChange(e.target.value)}
-                className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+                className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
               >
                 <option value="cpu">CPU</option>
                 <option value="gpu">GPU</option>
@@ -254,7 +254,7 @@ export function STTSettings({
                     <select
                       value={timestampFormat}
                       onChange={(e) => onTimestampFormatChange(e.target.value)}
-                      className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+                      className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
                     >
                       <option value="srt">SRT</option>
                       <option value="vtt">VTT</option>

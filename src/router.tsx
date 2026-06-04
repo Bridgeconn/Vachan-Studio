@@ -8,6 +8,7 @@ import { TTSPage } from "./pages/TTSPage";
 import { TTTPage } from "./pages/TTTPage";
 import { STSPage } from "./pages/STSPage";
 import { AudioToolsPage } from "./pages/AudioToolsPage";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -20,23 +21,23 @@ export const router = createBrowserRouter([
       },
       {
         path: "/stt",
-        element: <STTPage />,
+        element: <ProtectedRoute><STTPage /></ProtectedRoute>,
       },
       {
         path: "/tts",
-        element: <TTSPage />,
+        element: <ProtectedRoute><TTSPage /></ProtectedRoute>,
       },
       {
         path: "/ttt",
-        element: <TTTPage />,
+        element: <ProtectedRoute><TTTPage /></ProtectedRoute>,
       },
       {
         path: "/sts",
-        element: <STSPage />,
+        element: <ProtectedRoute><STSPage /></ProtectedRoute>,
       },
       {
         path: "/audio-tools",
-        element: <AudioToolsPage />,
+        element: <ProtectedRoute><AudioToolsPage /></ProtectedRoute>,
       },
     ],
   },

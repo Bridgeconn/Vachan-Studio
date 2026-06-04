@@ -126,6 +126,14 @@ export function AudioInput({
   }, [audioFile]);
 
   const validateFile = (file: File): string | null => {
+    if (file.size === 0) {
+      return "Audio file is empty. Please upload a valid audio file.";
+    }
+
+    if (file.size < 1000) {
+      return "Audio file is too short. Please upload a longer audio file.";
+    }
+
     if (file.size > MAX_FILE_SIZE) {
       return `File size exceeds ${MAX_FILE_SIZE / 1024 / 1024}MB limit (${(file.size / 1024 / 1024).toFixed(2)}MB)`;
     }
@@ -240,12 +248,20 @@ export function AudioInput({
 
       mediaRecorder.current.onstop = () => {
         const audioBlob = new Blob(audioChunks.current, { type: "audio/wav" });
+
+        if (audioBlob.size < 25000) {
+          toast.error(
+            "Recording is too short. Please record at least 1 second of audio.",
+          );
+          stream.getTracks().forEach((track) => track.stop());
+          return;
+        }
+
         const audioFile = new File([audioBlob], `recording_${Date.now()}.wav`, {
           type: "audio/wav",
         });
 
-        handleFileSelect(audioFile, true); // Mark as recorded
-
+        handleFileSelect(audioFile, true);
         stream.getTracks().forEach((track) => track.stop());
       };
 
