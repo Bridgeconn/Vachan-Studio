@@ -82,6 +82,7 @@ export function TTSPage() {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const autoPlayRef = useRef(autoPlay);
+  const isLoadingBlobRef = useRef(false);
   const [hasStartedPlaying, setHasStartedPlaying] = useState(false);
 
   // Keep autoPlayRef in sync
@@ -127,13 +128,17 @@ export function TTSPage() {
     });
     ws.on("pause", () => setIsPlaying(false));
     ws.on("finish", () => {
+      if (isLoadingBlobRef.current) return;
+      isLoadingBlobRef.current = true;
       setIsPlaying(false);
-      // Use functional update to always have latest index
       setCurrentAudioIndex((prev) => {
-        if (autoPlayRef.current && prev < audioFiles.length - 1) {
-          return prev + 1;
+        if (autoPlayRef.current) {
+          if (prev < audioFiles.length - 1) {
+            return prev + 1; // autoplay: go to next
+          }
+          return 0; // autoplay: loop back to start after last
         }
-        return prev;
+        return prev; // no autoplay: stay on current segment
       });
     });
 
@@ -146,17 +151,21 @@ export function TTSPage() {
     };
   }, [audioFiles]);
 
-  // Handle segment switching — just load new blob, don't recreate WaveSurfer
   useEffect(() => {
     if (!wavesurferRef.current || audioFiles.length === 0) return;
     if (!audioFiles[currentAudioIndex]) return;
 
+    isLoadingBlobRef.current = true;
     wavesurferRef.current.loadBlob(audioFiles[currentAudioIndex].blob);
 
-    // Auto-play when switching to next segment (not on initial load)
     if (autoPlayRef.current && currentAudioIndex > 0) {
       wavesurferRef.current.once("ready", () => {
+        isLoadingBlobRef.current = false;
         wavesurferRef.current?.play();
+      });
+    } else {
+      wavesurferRef.current.once("ready", () => {
+        isLoadingBlobRef.current = false;
       });
     }
   }, [currentAudioIndex]);
@@ -402,6 +411,10 @@ export function TTSPage() {
       a.click();
       return;
     }
+
+    audioFiles.forEach((file, i) => {
+      console.log(`Blob ${i}: size=${file.blob.size}, type=${file.blob.type}`);
+    });
 
     // Multiple files — zip them
     const JSZip = (await import("jszip")).default;

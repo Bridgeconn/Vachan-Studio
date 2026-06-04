@@ -69,6 +69,7 @@ export function TTSJobDetailModal({
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
   const autoPlayRef = useRef(autoPlay);
+  const isLoadingBlobRef = useRef(false);
 
   const toggleJobSavedStore = useJobStore((state) => state.toggleJobSaved);
 
@@ -125,14 +126,21 @@ export function TTSJobDetailModal({
       });
       ws.on("pause", () => setIsPlaying(false));
       ws.on("finish", () => {
+        if (isLoadingBlobRef.current) return;
+        isLoadingBlobRef.current = true;
         setIsPlaying(false);
         setCurrentIndex((prev) => {
-          if (autoPlayRef.current && prev < audioFiles.length - 1)
-            return prev + 1;
+          if (autoPlayRef.current) {
+            if (prev < audioFiles.length - 1) return prev + 1;
+            return 0;
+          }
           return prev;
         });
       });
 
+      ws.on("ready", () => {
+        isLoadingBlobRef.current = false;
+      });
       ws.loadBlob(audioFiles[currentIndex].blob);
       wavesurferRef.current = ws;
     };
@@ -151,6 +159,7 @@ export function TTSJobDetailModal({
     if (!wavesurferRef.current || audioFiles.length === 0) return;
     if (autoPlayRef.current && currentIndex > 0) {
       wavesurferRef.current.once("ready", () => {
+        isLoadingBlobRef.current = false;
         wavesurferRef.current?.play();
       });
     }
