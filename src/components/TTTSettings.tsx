@@ -357,7 +357,7 @@ export function TTTSettings({
               <select
                 value={device}
                 onChange={(e) => onDeviceChange(e.target.value)}
-                className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+                className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
               >
                 <option value="cpu">CPU</option>
                 <option value="gpu">GPU</option>

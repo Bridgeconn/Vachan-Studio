@@ -134,8 +134,8 @@ export function FeatureLayout({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
-                    className="w-full cursor-pointer mt-6"
+                    // variant="outline"
+                    className="cursor-pointer mt-6"
                     onClick={onNew}
                     disabled={isNewDisabled}
                   >

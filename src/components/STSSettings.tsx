@@ -256,7 +256,7 @@ export function STSSettings({
             <select
               value={outputFormat}
               onChange={(e) => onOutputFormatChange(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="wav">WAV</option>
               <option value="mp3">MP3</option>
@@ -288,7 +288,7 @@ export function STSSettings({
               <select
                 value={device}
                 onChange={(e) => onDeviceChange(e.target.value)}
-                className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+                className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
               >
                 <option value="cpu">CPU</option>
                 <option value="gpu">GPU</option>

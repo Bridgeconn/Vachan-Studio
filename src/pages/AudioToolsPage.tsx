@@ -776,7 +776,7 @@ export function AudioToolsPage() {
             <select
               value={vcOutputFormat}
               onChange={(e) => setVcOutputFormat(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="wav">WAV</option>
               <option value="mp3">MP3</option>
@@ -807,7 +807,7 @@ export function AudioToolsPage() {
             <select
               value={nrOutputFormat}
               onChange={(e) => setNrOutputFormat(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="wav">WAV</option>
               <option value="mp3">MP3</option>
@@ -819,7 +819,7 @@ export function AudioToolsPage() {
             <select
               value={nrDevice}
               onChange={(e) => setNrDevice(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="cpu">CPU</option>
               <option value="gpu">GPU</option>
@@ -848,7 +848,7 @@ export function AudioToolsPage() {
             <select
               value={aeOutputFormat}
               onChange={(e) => setAeOutputFormat(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="wav">WAV</option>
               <option value="mp3">MP3</option>
@@ -860,7 +860,7 @@ export function AudioToolsPage() {
             <select
               value={aeDevice}
               onChange={(e) => setAeDevice(e.target.value)}
-              className="w-full p-2 border rounded-lg text-sm cursor-pointer"
+              className="w-full p-2 border rounded-lg text-sm cursor-pointer bg-background text-foreground"
             >
               <option value="cpu">CPU</option>
               <option value="gpu">GPU</option>
@@ -1224,8 +1224,8 @@ export function AudioToolsPage() {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
-                    variant="outline"
-                    className="w-full cursor-pointer"
+                    // variant="outline"
+                    className="cursor-pointer"
                     onClick={handleNew}
                     disabled={isNewDisabled}
                   >

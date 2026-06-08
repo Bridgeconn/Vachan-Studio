@@ -69,15 +69,25 @@ export function TextInput({
     index: number,
     e: React.KeyboardEvent<HTMLTextAreaElement>,
   ) => {
+    // Double backspace to delete empty segment
     if (e.key === "Backspace" && boxes[index] === "" && index > 0) {
       if (pendingDelete === index) {
         removeBox(index);
       } else {
         setPendingDelete(index);
       }
-    } else {
-      setPendingDelete(null);
+      return;
     }
+
+    if (e.key === "Enter" && e.shiftKey) {
+      e.preventDefault();
+      if (canAddBox) {
+        handleAddBox();
+      }
+      return;
+    }
+
+    setPendingDelete(null);
   };
 
   const isReadOnly = isSubmitted;

@@ -2,7 +2,7 @@
 
 import { Moon, Sun, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { NotificationPanel } from "./NotificationPanel";
 import { useJobStore } from "@/store/jobStore";
@@ -25,7 +25,10 @@ export function Header({
   // onNotificationsClick,
   // onLogoClick,
 }: HeaderProps) {
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    const saved = localStorage.getItem("theme");
+    return saved === "dark";
+  });
   const [isNotificationOpen, setIsNotificationOpen] = useState(false);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
@@ -40,9 +43,20 @@ export function Header({
   const hasNotifications = activeJobsCount > 0;
 
   const toggleTheme = () => {
-    setIsDark(!isDark);
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    localStorage.setItem("theme", newIsDark ? "dark" : "light");
     document.documentElement.classList.toggle("dark");
   };
+
+  // Apply theme on mount
+  useEffect(() => {
+    if (isDark) {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
+  }, []);
 
   return (
     <header className="fixed top-0 left-0 right-0 h-16 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 z-50">
@@ -94,34 +108,35 @@ export function Header({
           </Tooltip>
 
           {/* Notifications / Files */}
-          {isLoggedIn &&
+          {isLoggedIn && (
             <div className="relative">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  className="cursor-pointer"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setIsNotificationOpen(!isNotificationOpen)}
-                >
-                  <FileText className="h-5 w-5" />
-                  {hasNotifications && (
-                    <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>View outputs ({activeJobsCount} active)</p>
-              </TooltipContent>
-            </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    className="cursor-pointer"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setIsNotificationOpen(!isNotificationOpen)}
+                  >
+                    <FileText className="h-5 w-5" />
+                    {hasNotifications && (
+                      <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>View outputs ({activeJobsCount} active)</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Notification Panel */}
-            <NotificationPanel
-              isOpen={isNotificationOpen}
-              onClose={() => setIsNotificationOpen(false)}
-              onOpenJob={(job) => setSelectedJob(job)}
-            />
-          </div>}
+              {/* Notification Panel */}
+              <NotificationPanel
+                isOpen={isNotificationOpen}
+                onClose={() => setIsNotificationOpen(false)}
+                onOpenJob={(job) => setSelectedJob(job)}
+              />
+            </div>
+          )}
 
           {/* Login/Logout */}
           {isLoggedIn ? (

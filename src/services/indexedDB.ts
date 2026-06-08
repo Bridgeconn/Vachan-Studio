@@ -46,11 +46,11 @@ export async function checkDuplicateFileName(
     (job) =>
       job.saved === true &&
       job.type === featureType &&
-      job.input.fileName === fileName &&
+      (job.output?.savedFileName === fileName ||
+        job.input.fileName === fileName) &&
       job.id !== excludeId,
   );
 }
-
 /**
  * Save a job to IndexedDB
  */
