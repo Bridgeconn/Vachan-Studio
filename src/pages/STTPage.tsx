@@ -67,10 +67,9 @@ export function STTPage() {
     format: "srt",
   });
 
-  // Get token from auth store
-  const { token } = useAuthStore();
+  const { isAuthenticated } = useAuthStore();
   // Initialize SSE sync
-  useSSESync(token);
+  useSSESync();
 
   // Get job store methods
   const addJob = useJobStore((state) => state.addJob);
@@ -196,7 +195,7 @@ export function STTPage() {
   };
 
   const fetchSRTData = async (jobId: number) => {
-    if (!token || !generateTimestamp) return;
+    if (!isAuthenticated || !generateTimestamp) return;
 
     setIsLoadingSRT(true);
 
@@ -204,7 +203,7 @@ export function STTPage() {
       console.log("Fetching SRT assets for job:", jobId);
 
       // Download assets ZIP
-      const zipBlob = await aiEngineService.getJobAssets(jobId, token);
+      const zipBlob = await aiEngineService.getJobAssets(jobId);
 
       // Extract SRT from ZIP
       const srtContent = await extractSRTFromZip(zipBlob);
@@ -243,7 +242,7 @@ export function STTPage() {
       return;
     }
 
-    if (!token) {
+    if (!isAuthenticated) {
       alert("Please login first");
       return;
     }
@@ -256,7 +255,7 @@ export function STTPage() {
 
     try {
       // Submit job to API
-      const jobId = await aiEngineService.submitSTTJob(selectedFile, token, {
+      const jobId = await aiEngineService.submitSTTJob(selectedFile, {
         model_name: selectedModel,
         transcription_language: selectedLanguage,
         device: device,

@@ -92,8 +92,8 @@ export function TTSPage() {
 
   const navigate = useNavigate();
   const setHandoffAudio = useJobStore((state) => state.setHandoffAudio);
-  const { token } = useAuthStore();
-  useSSESync(token);
+  const { isAuthenticated } = useAuthStore();
+  useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
@@ -178,11 +178,11 @@ export function TTSPage() {
   }, [audioFiles]);
 
   const fetchAudioData = async (jobId: number) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setIsLoadingAudio(true);
 
     try {
-      const zipBlob = await aiEngineService.getJobAssets(jobId, token);
+      const zipBlob = await aiEngineService.getJobAssets(jobId);
       const extracted = await extractAudioFromZip(zipBlob);
 
       if (extracted.length === 0) {
@@ -229,7 +229,7 @@ export function TTSPage() {
       return;
     }
 
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please login first");
       return;
     }
@@ -249,7 +249,7 @@ export function TTSPage() {
     setAudioFiles([]);
 
     try {
-      const jobId = await aiEngineService.submitTTSJob(filledTexts, token, {
+      const jobId = await aiEngineService.submitTTSJob(filledTexts, {
         model_name: selectedModel,
         output_format: "wav",
         language: selectedLanguage || undefined,

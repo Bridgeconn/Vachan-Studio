@@ -185,8 +185,8 @@ export function AudioToolsPage() {
   const handoffAudio = useJobStore((state) => state.handoffAudio);
   const setHandoffAudio = useJobStore((state) => state.setHandoffAudio);
 
-  const { token } = useAuthStore();
-  useSSESync(token);
+  const { isAuthenticated } = useAuthStore();
+  useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
@@ -414,7 +414,7 @@ export function AudioToolsPage() {
       toast.error("Please upload or record an audio file first");
       return;
     }
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please login first");
       return;
     }
@@ -433,7 +433,7 @@ export function AudioToolsPage() {
       if (activeFeature === "vc") {
         jobId = await aiEngineService.submitVoiceCloneJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: vcOutputFormat,
             reference_speaker:
@@ -446,7 +446,7 @@ export function AudioToolsPage() {
       } else if (activeFeature === "nr") {
         jobId = await aiEngineService.submitNoiseRemovalJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: nrOutputFormat,
             enhance: nrEnhance,
@@ -456,7 +456,7 @@ export function AudioToolsPage() {
       } else {
         jobId = await aiEngineService.submitEnhanceJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: aeOutputFormat,
             denoise: aeDenoise,
