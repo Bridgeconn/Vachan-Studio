@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 
 const MAX_BOXES = 3;
-const MAX_WORDS = 30;
+const MAX_WORDS = 50;
 
 function countWords(text: string): number {
   return text.trim() === "" ? 0 : text.trim().split(/\s+/).length;
