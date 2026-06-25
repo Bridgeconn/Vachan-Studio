@@ -3,18 +3,18 @@
 import { useEffect, useRef } from "react";
 import { aiEngineService } from "@/services/aiEngine";
 import { useJobStore } from "@/store/jobStore";
+import { useAuthStore } from "@/store/authStore";
 import { extractAudioFromZip } from "@/utils/zipExtractor";
 import { toast } from "sonner";
 
-export function useSSESync(token: string | null) {
+export function useSSESync() {
+  const { isAuthenticated } = useAuthStore();
   const { getActiveJobs, updateJobByJobId } = useJobStore();
-  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(
-    null,
-  );
+  const pollingIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const fetchingJobsRef = useRef<Set<number>>(new Set());
 
   useEffect(() => {
-    if (!token) {
+    if (!isAuthenticated) {
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
@@ -29,7 +29,7 @@ export function useSSESync(token: string | null) {
         try {
           console.log("Polling job:", job.jobId, "type:", job.type);
 
-          const result = await aiEngineService.getJobStatus(job.jobId, token);
+          const result = await aiEngineService.getJobStatus(job.jobId);
 
           if (result.data.status === "job finished") {
             console.log("Job completed:", job.jobId, "type:", job.type);
@@ -55,16 +55,11 @@ export function useSSESync(token: string | null) {
               job.type === "nr" ||
               job.type === "ae"
             ) {
-              // TTS/STS/VC/NR/AE audio is fetched separately via assets API
-              // Skip if already fetching assets for this job
               if (fetchingJobsRef.current.has(job.jobId)) continue;
               fetchingJobsRef.current.add(job.jobId);
 
               try {
-                const zipBlob = await aiEngineService.getJobAssets(
-                  job.jobId,
-                  token,
-                );
+                const zipBlob = await aiEngineService.getJobAssets(job.jobId);
                 const extracted = await extractAudioFromZip(zipBlob);
 
                 extracted.sort((a, b) => a.name.localeCompare(b.name));
@@ -80,12 +75,7 @@ export function useSSESync(token: string | null) {
                   },
                 });
               } catch (assetError) {
-                console.error(
-                  "Failed to fetch assets for job:",
-                  job.jobId,
-                  assetError,
-                );
-                // Still mark as completed even if asset fetch fails
+                console.error("Failed to fetch assets for job:", job.jobId, assetError);
                 updateJobByJobId(job.jobId, {
                   status: "completed",
                   completedAt: Date.now(),
@@ -145,5 +135,5 @@ export function useSSESync(token: string | null) {
         pollingIntervalRef.current = null;
       }
     };
-  }, [token, getActiveJobs, updateJobByJobId]);
+  }, [isAuthenticated, getActiveJobs, updateJobByJobId]);
 }

@@ -88,22 +88,22 @@ const SUB_FEATURES = [
 const SPEAKERS = [
   {
     value: "speaker_1_hin_female",
-    label: "Speaker 1 - Hindi Female",
+    label: "Speaker 1 Female",
     audio: "/speakers/speaker_1_hin_female.mp3",
   },
   {
     value: "speaker_2_hin_female",
-    label: "Speaker 2 - Hindi Female",
+    label: "Speaker 2 Female",
     audio: "/speakers/speaker_2_hin_female.mp3",
   },
   {
     value: "speaker_3_tam_male",
-    label: "Speaker 3 - Tamil Male",
+    label: "Speaker 3 Male",
     audio: "/speakers/speaker_3_tam_male.mp3",
   },
   {
     value: "speaker_4_tel_male",
-    label: "Speaker 4 - Telugu Male",
+    label: "Speaker 4 Male",
     audio: "/speakers/speaker_4_tel_male.mp3",
   },
 ];
@@ -114,7 +114,7 @@ const MODEL_NAMES: Record<SubFeature, string> = {
   ae: "resemble-enhance",
 };
 
-const MAX_FILE_SIZE = 1 * 1024 * 1024; // 1MB
+const MAX_FILE_SIZE = 3 * 1024 * 1024; // 3MB
 
 export function AudioToolsPage() {
   const navigate = useNavigate();
@@ -185,8 +185,8 @@ export function AudioToolsPage() {
   const handoffAudio = useJobStore((state) => state.handoffAudio);
   const setHandoffAudio = useJobStore((state) => state.setHandoffAudio);
 
-  const { token } = useAuthStore();
-  useSSESync(token);
+  const { isAuthenticated } = useAuthStore();
+  useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
@@ -414,14 +414,14 @@ export function AudioToolsPage() {
       toast.error("Please upload or record an audio file first");
       return;
     }
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please login first");
       return;
     }
 
     if (currentState.selectedFile.size > MAX_FILE_SIZE) {
       toast.error(
-        `File size exceeds 1MB limit (${(currentState.selectedFile.size / 1024 / 1024).toFixed(2)}MB)`,
+        `File size exceeds 3MB limit (${(currentState.selectedFile.size / 1024 / 1024).toFixed(2)}MB)`,
       );
       return;
     }
@@ -433,7 +433,7 @@ export function AudioToolsPage() {
       if (activeFeature === "vc") {
         jobId = await aiEngineService.submitVoiceCloneJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: vcOutputFormat,
             reference_speaker:
@@ -446,7 +446,7 @@ export function AudioToolsPage() {
       } else if (activeFeature === "nr") {
         jobId = await aiEngineService.submitNoiseRemovalJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: nrOutputFormat,
             enhance: nrEnhance,
@@ -456,7 +456,7 @@ export function AudioToolsPage() {
       } else {
         jobId = await aiEngineService.submitEnhanceJob(
           currentState.selectedFile,
-          token,
+          // token, --- IGNORE ---
           {
             output_format: aeOutputFormat,
             denoise: aeDenoise,
@@ -749,7 +749,7 @@ export function AudioToolsPage() {
                       const file = e.target.files?.[0];
                       if (file) {
                         if (file.size > MAX_FILE_SIZE) {
-                          toast.error(`File size exceeds 1MB limit`);
+                          toast.error(`File size exceeds 3MB limit`);
                           return;
                         }
                         setReferenceAudio(file);
@@ -763,7 +763,7 @@ export function AudioToolsPage() {
                     htmlFor="ref-audio-input"
                     className="w-full flex items-center justify-center p-3 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary transition-colors text-sm text-muted-foreground"
                   >
-                    Click to upload reference audio (max 1MB)
+                    Click to upload reference audio (max 3MB)
                   </label>
                 </div>
               )}

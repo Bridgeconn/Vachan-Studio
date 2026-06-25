@@ -16,18 +16,20 @@ export function Layout() {
   const [pendingFeature, setPendingFeature] = useState<string | null>(null);
 
   // Use auth store
-  const { isAuthenticated, login, logout } = useAuthStore();
+  const { isAuthenticated, login, setApiKey, logout } = useAuthStore();
 
-  const handleLoginSuccess = async (newToken: string) => {
-    login(newToken); // Save to store
+  const handleLoginSuccess = async (
+    newToken: string,
+    userId: string,
+    apiKey: string,
+    expiresInSeconds: number,
+  ) => {
+    login(newToken, userId);
+    setApiKey(apiKey, expiresInSeconds);
 
     // Load jobs from IndexedDB after login
     const loadJobsFromDB = useJobStore.getState().loadJobsFromDB;
     await loadJobsFromDB();
-    console.log("Jobs loaded from IndexedDB after login");
-
-    // TODO: Re-enable when backend fixes CORS for SSE
-    // sseManager.connect(newToken);
 
     // If user was trying to access a feature, navigate to it
     if (pendingFeature) {
@@ -60,7 +62,6 @@ export function Layout() {
       toast.success("Logged out successfully");
       // Navigate to home
       navigate("/");
-
     } catch (error) {
       // Still logout even if cleanup fails
       logout();

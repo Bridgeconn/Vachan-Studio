@@ -1,46 +1,77 @@
-import { API_BASE_URL, API_BASE_URL_AUTH } from "@/config/constants";
+import { API_BASE_URL_AUTH } from "@/config/constants";
 
-import type { LoginResponse } from "@/types";
+const TTL_SECONDS = 3600; // 1 hr
+
+const ALL_SCOPES = [
+  "stt",
+  "mt",
+  "s2s",
+  "tts",
+  "voice-clone",
+  "noise-removal",
+  "audio-enhance",
+  "audio-segmentation",
+  "fa",
+  "job",
+  "assets",
+  "push-notification",
+  "languages",
+  "models",
+  "served-models",
+];
 
 class AuthService {
-  private accessToken: string | null = null;
+  async login(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; userId: string }> {
+    const response = await fetch(
+      `${API_BASE_URL_AUTH}/auth/user/login?user_email=${encodeURIComponent(email)}&password=${encodeURIComponent(password)}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
-  async login(username: string, password: string): Promise<string> {
-    const formData = new URLSearchParams();
-    formData.append("grant_type", "password");
-    formData.append("username", username);
-    formData.append("password", password);
-    formData.append("scope", "");
-    formData.append("client_id", "string");
-    formData.append("client_secret", "string");
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Login failed");
+    }
 
-    const response = await fetch(`${API_BASE_URL}/token`, {
+    const data = await response.json();
+    return {
+      token: data.token,
+      userId: data.userId,
+    };
+  }
+
+  async generateApiKey(
+    sessionToken: string,
+    userId: string,
+  ): Promise<{ apiKey: string; expiresInSeconds: number }> {
+    const response = await fetch(`${API_BASE_URL_AUTH}/auth/user/keys`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${sessionToken}`,
       },
-      body: formData.toString(),
+      body: JSON.stringify({
+        auth_user_id: userId,
+        ttl_seconds: TTL_SECONDS,
+        scopes: ALL_SCOPES,
+      }),
     });
 
     if (!response.ok) {
-      throw new Error("Login failed");
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to generate API key");
     }
 
-    const data: LoginResponse = await response.json();
-    this.accessToken = data.access_token;
-    return this.accessToken;
-  }
-
-  getToken(): string | null {
-    return this.accessToken;
-  }
-
-  logout(): void {
-    this.accessToken = null;
-  }
-
-  isAuthenticated(): boolean {
-    return this.accessToken !== null;
+    const data = await response.json();
+    return {
+      apiKey: data.api_key,
+      expiresInSeconds: data.expires_in_seconds,
+    };
   }
 
   async register(
@@ -62,11 +93,14 @@ class AuthService {
   }
 
   async forgotPassword(userEmail: string): Promise<string> {
-    const response = await fetch(`${API_BASE_URL_AUTH}/auth/user/forgot-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ user_email: userEmail }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL_AUTH}/auth/user/forgot-password`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_email: userEmail }),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -103,14 +137,17 @@ class AuthService {
     settingsFlowId: string,
     newPassword: string,
   ): Promise<void> {
-    const response = await fetch(`${API_BASE_URL_AUTH}/auth/user/reset-password`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        new_password: newPassword,
-        settings_flow_id: settingsFlowId,
-      }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL_AUTH}/auth/user/reset-password`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          new_password: newPassword,
+          settings_flow_id: settingsFlowId,
+        }),
+      },
+    );
 
     if (!response.ok) {
       const error = await response.json();

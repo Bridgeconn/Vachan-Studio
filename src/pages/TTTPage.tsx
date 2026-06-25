@@ -80,8 +80,8 @@ export function TTTPage() {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const { token } = useAuthStore();
-  useSSESync(token);
+  const { isAuthenticated } = useAuthStore();
+  useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
@@ -232,7 +232,7 @@ export function TTTPage() {
       toast.error("Please select a target language");
       return;
     }
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please login first");
       return;
     }
@@ -251,7 +251,6 @@ export function TTTPage() {
     try {
       const jobId = await aiEngineService.submitTTTJob(
         [inputText.trim()],
-        token,
         {
           model_name: selectedModel,
           source_language: sourceLanguage,

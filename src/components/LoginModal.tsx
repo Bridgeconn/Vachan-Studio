@@ -19,7 +19,12 @@ type View = "login" | "register" | "forgot" | "verify-code" | "reset-password";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (token: string) => void;
+  onSuccess: (
+    token: string,
+    userId: string,
+    apiKey: string,
+    expiresInSeconds: number,
+  ) => void;
 }
 
 export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
@@ -84,10 +89,14 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     setLoading(true);
     setError("");
     try {
-      const token = await authService.login(username, password);
+      const { token, userId } = await authService.login(username, password);
+      const { apiKey, expiresInSeconds } = await authService.generateApiKey(
+        token,
+        userId,
+      );
       resetAll();
       setView("login");
-      onSuccess(token);
+      onSuccess(token, userId, apiKey, expiresInSeconds);
       onClose();
     } catch {
       setError("Invalid username or password");
@@ -112,7 +121,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
         regEmail,
         regPassword,
         regFirstname || undefined,
-        regLastname || undefined
+        regLastname || undefined,
       );
       toast.success("Registration successful! Please login.");
       resetAll();
@@ -135,7 +144,9 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
       switchView("verify-code");
       toast.success("Recovery code sent to your email");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to send recovery code");
+      setError(
+        err instanceof Error ? err.message : "Failed to send recovery code",
+      );
     } finally {
       setLoading(false);
     }
@@ -149,7 +160,7 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
     try {
       const flowId = await authService.verifyRecoveryCode(
         recoveryFlowId,
-        recoveryCode
+        recoveryCode,
       );
       setSettingsFlowId(flowId);
       switchView("reset-password");
@@ -185,21 +196,31 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
 
   const getTitle = () => {
     switch (view) {
-      case "login": return "Login";
-      case "register": return "Create Account";
-      case "forgot": return "Forgot Password";
-      case "verify-code": return "Enter Recovery Code";
-      case "reset-password": return "Reset Password";
+      case "login":
+        return "Login";
+      case "register":
+        return "Create Account";
+      case "forgot":
+        return "Forgot Password";
+      case "verify-code":
+        return "Enter Recovery Code";
+      case "reset-password":
+        return "Reset Password";
     }
   };
 
   const getDescription = () => {
     switch (view) {
-      case "login": return "Enter your credentials to access AI features";
-      case "register": return "Create a new account to get started";
-      case "forgot": return "Enter your email to receive a recovery code";
-      case "verify-code": return "Enter the recovery code sent to your email";
-      case "reset-password": return "Enter your new password";
+      case "login":
+        return "Enter your credentials to access AI features";
+      case "register":
+        return "Create a new account to get started";
+      case "forgot":
+        return "Enter your email to receive a recovery code";
+      case "verify-code":
+        return "Enter the recovery code sent to your email";
+      case "reset-password":
+        return "Enter your new password";
     }
   };
 
@@ -249,7 +270,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
               <div className="flex justify-end">
@@ -269,8 +294,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Logging in...</> : "Login"}
+            <Button
+              type="submit"
+              className="w-full h-11 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Logging in...
+                </>
+              ) : (
+                "Login"
+              )}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground pt-2">
@@ -307,7 +343,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-sm font-medium">
-                  First Name <span className="text-xs text-muted-foreground">(optional)</span>
+                  First Name{" "}
+                  <span className="text-xs text-muted-foreground">
+                    (optional)
+                  </span>
                 </label>
                 <Input
                   type="text"
@@ -320,7 +359,10 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
               <div className="space-y-1">
                 <label className="text-sm font-medium">
-                  Last Name <span className="text-xs text-muted-foreground">(optional)</span>
+                  Last Name{" "}
+                  <span className="text-xs text-muted-foreground">
+                    (optional)
+                  </span>
                 </label>
                 <Input
                   type="text"
@@ -353,7 +395,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -378,7 +424,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -389,8 +439,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Creating account...</> : "Create Account"}
+            <Button
+              type="submit"
+              className="w-full h-11 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
+              ) : (
+                "Create Account"
+              )}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground pt-2">
@@ -428,8 +489,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Sending...</> : "Send Recovery Code"}
+            <Button
+              type="submit"
+              className="w-full h-11 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sending...
+                </>
+              ) : (
+                "Send Recovery Code"
+              )}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
@@ -469,8 +541,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Verifying...</> : "Verify Code"}
+            <Button
+              type="submit"
+              className="w-full h-11 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Verifying...
+                </>
+              ) : (
+                "Verify Code"
+              )}
             </Button>
 
             <div className="text-center text-sm text-muted-foreground">
@@ -506,13 +589,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
 
             <div className="space-y-1">
-              <label className="text-sm font-medium">Confirm New Password</label>
+              <label className="text-sm font-medium">
+                Confirm New Password
+              </label>
               <div className="relative">
                 <Input
                   type={showConfirmPassword ? "text" : "password"}
@@ -529,7 +618,11 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground cursor-pointer"
                   tabIndex={-1}
                 >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -540,8 +633,19 @@ export function LoginModal({ isOpen, onClose, onSuccess }: LoginModalProps) {
               </div>
             )}
 
-            <Button type="submit" className="w-full h-11 cursor-pointer" disabled={loading}>
-              {loading ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Resetting...</> : "Reset Password"}
+            <Button
+              type="submit"
+              className="w-full h-11 cursor-pointer"
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Resetting...
+                </>
+              ) : (
+                "Reset Password"
+              )}
             </Button>
           </form>
         )}

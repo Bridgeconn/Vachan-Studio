@@ -76,8 +76,8 @@ export function STSPage() {
   const waveformRef = useRef<HTMLDivElement>(null);
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
-  const { token } = useAuthStore();
-  useSSESync(token);
+  const { isAuthenticated } = useAuthStore();
+  useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
@@ -179,11 +179,11 @@ export function STSPage() {
   ]);
 
   const fetchAudioData = async (jobId: number) => {
-    if (!token) return;
+    if (!isAuthenticated) return;
     setIsLoadingAudio(true);
 
     try {
-      const zipBlob = await aiEngineService.getJobAssets(jobId, token);
+      const zipBlob = await aiEngineService.getJobAssets(jobId);
       const extracted = await extractAudioFromZip(zipBlob);
 
       if (extracted.length === 0) {
@@ -219,7 +219,7 @@ export function STSPage() {
       toast.error("Please select a target language");
       return;
     }
-    if (!token) {
+    if (!isAuthenticated) {
       toast.error("Please login first");
       return;
     }
@@ -230,7 +230,7 @@ export function STSPage() {
     setAudioFile(null);
 
     try {
-      const jobId = await aiEngineService.submitSTSJob(selectedFile, token, {
+      const jobId = await aiEngineService.submitSTSJob(selectedFile,{
         model_name: "seamless-m4t-large",
         target_language: targetLanguage,
         output_format: outputFormat,
