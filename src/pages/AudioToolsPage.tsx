@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useJobStore } from "@/store/jobStore";
-import { useSSESync } from "@/hooks/useSSESync";
+// import { useSSESync } from "@/hooks/useSSESync";
 import { SplitView } from "@/components/SplitView";
 import { AudioInput } from "@/components/AudioInput";
 import { Button } from "@/components/ui/button";
@@ -186,7 +186,7 @@ export function AudioToolsPage() {
   const setHandoffAudio = useJobStore((state) => state.setHandoffAudio);
 
   const { isAuthenticated } = useAuthStore();
-  useSSESync();
+  // useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);

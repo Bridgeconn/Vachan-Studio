@@ -2,7 +2,7 @@ import { HighlightedTranscription } from "@/components/HighlightedTranscription"
 import { extractSRTFromZip } from "@/utils/zipExtractor";
 import { useState, useEffect } from "react";
 import { useJobStore } from "@/store/jobStore";
-import { useSSESync } from "@/hooks/useSSESync";
+// import { useSSESync } from "@/hooks/useSSESync";
 import { FeatureLayout } from "@/components/FeatureLayout";
 import { SplitView } from "@/components/SplitView";
 import { AudioInput } from "@/components/AudioInput";
@@ -71,7 +71,7 @@ export function STTPage() {
 
   const { isAuthenticated } = useAuthStore();
   // Initialize SSE sync
-  useSSESync();
+  // useSSESync();
 
   // Get job store methods
   const addJob = useJobStore((state) => state.addJob);

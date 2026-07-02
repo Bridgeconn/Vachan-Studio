@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useJobStore } from "@/store/jobStore";
-import { useSSESync } from "@/hooks/useSSESync";
+// import { useSSESync } from "@/hooks/useSSESync";
 import { FeatureLayout } from "@/components/FeatureLayout";
 import { SplitView } from "@/components/SplitView";
 import { TTSSettings } from "@/components/TTSSettings";
@@ -93,7 +93,7 @@ export function TTSPage() {
   const navigate = useNavigate();
   const setHandoffAudio = useJobStore((state) => state.setHandoffAudio);
   const { isAuthenticated } = useAuthStore();
-  useSSESync();
+  // useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);

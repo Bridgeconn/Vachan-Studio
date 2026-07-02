@@ -7,9 +7,10 @@ import { LoginModal } from "./LoginModal";
 import { sseManager } from "@/services/sseManager";
 import { useAuthStore } from "@/store/authStore";
 import { useJobStore } from "@/store/jobStore";
-import { deleteUnsavedJobs, dismissAllJobs } from "@/services/indexedDB";
 import { toast } from "sonner";
+import { deleteUnsavedJobs, dismissAllJobs } from "@/services/indexedDB";
 import { authService } from "@/services/auth";
+import { useSSESync } from "@/hooks/useSSESync";
 
 export function Layout() {
   const navigate = useNavigate();
@@ -18,6 +19,7 @@ export function Layout() {
 
   // Use auth store
   const { isAuthenticated, login, setApiKey, logout, token, apiKey  } = useAuthStore();
+  useSSESync();
 
   const handleLoginSuccess = async (
     newToken: string,
