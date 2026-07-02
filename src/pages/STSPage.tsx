@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useJobStore } from "@/store/jobStore";
-import { useSSESync } from "@/hooks/useSSESync";
+// import { useSSESync } from "@/hooks/useSSESync";
 import { FeatureLayout } from "@/components/FeatureLayout";
 import { SplitView } from "@/components/SplitView";
 import { STSSettings } from "@/components/STSSettings";
@@ -77,7 +77,7 @@ export function STSPage() {
   const wavesurferRef = useRef<WaveSurfer | null>(null);
 
   const { isAuthenticated } = useAuthStore();
-  useSSESync();
+  // useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);

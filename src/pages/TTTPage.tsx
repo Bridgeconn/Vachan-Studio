@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useJobStore } from "@/store/jobStore";
-import { useSSESync } from "@/hooks/useSSESync";
+// import { useSSESync } from "@/hooks/useSSESync";
 import { FeatureLayout } from "@/components/FeatureLayout";
 import { SplitView } from "@/components/SplitView";
 import { TTTSettings } from "@/components/TTTSettings";
@@ -81,7 +81,7 @@ export function TTTPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { isAuthenticated } = useAuthStore();
-  useSSESync();
+  // useSSESync();
 
   const addJob = useJobStore((state) => state.addJob);
   const updateJobByJobId = useJobStore((state) => state.updateJobByJobId);
